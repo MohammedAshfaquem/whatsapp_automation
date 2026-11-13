@@ -1,0 +1,98 @@
+{
+  "version": "7.3",
+  "routing_model": {"ADDRESS": ["SCHEDULE"], "SCHEDULE": []},
+  "screens": [
+    {
+      "id": "ADDRESS",
+      "title": "Service address",
+      "data": {
+        "min_date": {"type": "string", "__example__": "2026-11-04"},
+        "max_date": {"type": "string", "__example__": "2027-05-03"},
+        "selected_date": {"type": "string", "__example__": "2026-11-05"},
+        "house": {"type": "string", "__example__": "House 42"},
+        "street": {"type": "string", "__example__": "Main Road"},
+        "locality": {"type": "string", "__example__": "Tirur"},
+        "pin_code": {"type": "string", "__example__": "676306"},
+        "landmark": {"type": "string", "__example__": "Near school"}
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "address_form",
+            "init-values": {
+              "house": "${data.house}", "street": "${data.street}", "locality": "${data.locality}",
+              "pin_code": "${data.pin_code}", "landmark": "${data.landmark}"
+            },
+            "children": [
+              {"type": "TextBody", "text": "Enter the address where the technician should visit."},
+              {"type": "TextInput", "name": "house", "label": "House / flat / building", "required": true,
+               "input-type": "text", "min-chars": 2, "max-chars": 100},
+              {"type": "TextInput", "name": "street", "label": "Street / road", "required": true,
+               "input-type": "text", "min-chars": 2, "max-chars": 100},
+              {"type": "TextInput", "name": "locality", "label": "Locality / town", "required": true,
+               "input-type": "text", "min-chars": 2, "max-chars": 100},
+              {"type": "TextInput", "name": "pin_code", "label": "PIN code", "required": true,
+               "input-type": "text", "min-chars": 6, "max-chars": 6, "helper-text": "Enter the six-digit service-area PIN code."},
+              {"type": "TextInput", "name": "landmark", "label": "Landmark (optional)", "required": false,
+               "input-type": "text", "max-chars": 120},
+              {"type": "Footer", "label": "Choose date", "on-click-action": {
+                "name": "navigate", "next": {"type": "screen", "name": "SCHEDULE"}, "payload": {
+                  "house": "${form.house}", "street": "${form.street}", "locality": "${form.locality}",
+                  "pin_code": "${form.pin_code}", "landmark": "${form.landmark}",
+                  "min_date": "${data.min_date}", "max_date": "${data.max_date}", "selected_date": "${data.selected_date}"
+                }
+              }}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "SCHEDULE",
+      "title": "Preferred visit",
+      "terminal": true,
+      "success": true,
+      "data": {
+        "house": {"type": "string", "__example__": "House 42"},
+        "street": {"type": "string", "__example__": "Main Road"},
+        "locality": {"type": "string", "__example__": "Tirur"},
+        "pin_code": {"type": "string", "__example__": "676306"},
+        "landmark": {"type": "string", "__example__": "Near school"},
+        "min_date": {"type": "string", "__example__": "2026-11-04"},
+        "max_date": {"type": "string", "__example__": "2027-05-03"},
+        "selected_date": {"type": "string", "__example__": "2026-11-05"}
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "Form",
+            "name": "schedule_form",
+            "init-values": {"preferred_date": "${data.selected_date}"},
+            "children": [
+              {"type": "TextBody", "text": "Choose your preferred date and time of day. Our team will confirm availability."},
+              {"type": "DatePicker", "name": "preferred_date", "label": "Visit date", "required": true,
+               "min-date": "${data.min_date}", "max-date": "${data.max_date}"},
+              {"type": "Dropdown", "name": "time_slot", "label": "Time preference", "required": true,
+               "data-source": [
+                 {"id": "morning", "title": "Morning"},
+                 {"id": "afternoon", "title": "Afternoon"},
+                 {"id": "evening", "title": "Evening"}
+               ]},
+              {"type": "TextCaption", "text": "You will review your request in chat before submitting it."},
+              {"type": "Footer", "label": "Review request", "on-click-action": {
+                "name": "complete", "payload": {
+                  "preferred_date": "${form.preferred_date}", "time_slot": "${form.time_slot}",
+                  "house": "${data.house}", "street": "${data.street}", "locality": "${data.locality}",
+                  "pin_code": "${data.pin_code}", "landmark": "${data.landmark}"
+                }
+              }}
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

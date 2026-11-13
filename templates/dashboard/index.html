@@ -1,0 +1,1748 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Top Tabs Pill Bar */
+    .top-pill-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        padding: 5px;
+        border-radius: 40px;
+        margin-bottom: 2rem;
+        width: fit-content;
+        box-shadow: var(--shadow-subtle);
+    }
+
+    .pill-tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 0.6rem 1.25rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 30px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+    }
+
+    .pill-tab-btn:hover {
+        color: var(--primary);
+    }
+
+    .pill-tab-btn.active {
+        background: var(--primary);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+    }
+
+    .tab-badge {
+        font-size: 0.7rem;
+        padding: 2px 7px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.08);
+    }
+    .pill-tab-btn.active .tab-badge {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+    }
+
+    .tab-pane {
+        display: none;
+        animation: fadeIn 0.25s ease;
+    }
+    .tab-pane.active {
+        display: block;
+    }
+
+    /* 4 Top KPI Stat Cards (Matching Reference Screenshot) */
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
+    @media (max-width: 1200px) {
+        .kpi-row {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (max-width: 640px) {
+        .kpi-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .kpi-card {
+        background: #ffffff;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border-subtle);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 140px;
+        transition: all 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .kpi-label {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--text-heading);
+    }
+
+    .kpi-icon-pill {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        color: var(--text-muted);
+    }
+
+    .kpi-value-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 0.75rem;
+    }
+
+    .kpi-num {
+        font-size: 2.1rem;
+        font-weight: 800;
+        color: var(--text-heading);
+        letter-spacing: -0.02em;
+        line-height: 1;
+    }
+
+    .kpi-trend {
+        font-size: 0.75rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 0.4rem;
+    }
+    .kpi-trend.up { color: #16a34a; }
+    .kpi-trend.down { color: #e11d48; }
+
+    /* Micro Visual Indicators inside KPI cards */
+    .micro-chart-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 28px;
+    }
+    .micro-bar {
+        width: 4px;
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .micro-bar.highlight {
+        background: #86efac;
+    }
+
+    .micro-gauge {
+        width: 42px;
+        height: 24px;
+        border-top-left-radius: 42px;
+        border-top-right-radius: 42px;
+        border: 4px solid #cbd5e1;
+        border-bottom: 0;
+        position: relative;
+    }
+    .micro-gauge::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 2px;
+        right: 2px;
+        height: 4px;
+        background: #818cf8;
+        border-radius: 2px;
+    }
+
+    /* Middle Row: Appointments Chart + Service Distribution Donut */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1.15fr;
+        gap: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
+    @media (max-width: 1024px) {
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Total Appointments Stylized Bar Chart */
+    .bar-chart-card {
+        background: #ffffff;
+        border-radius: var(--radius-xl);
+        padding: 1.75rem;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border-subtle);
+    }
+
+    .period-switch {
+        display: flex;
+        background: #f1f5f9;
+        padding: 3px;
+        border-radius: 20px;
+        gap: 2px;
+    }
+    .period-btn {
+        border: none;
+        background: transparent;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        padding: 3px 10px;
+        border-radius: 16px;
+        cursor: pointer;
+    }
+    .period-btn.active {
+        background: #ffffff;
+        color: var(--text-heading);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-canvas {
+        margin-top: 1.5rem;
+        height: 230px;
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-end;
+        position: relative;
+        padding-left: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .y-axis {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        font-size: 0.72rem;
+        color: var(--text-light);
+    }
+
+    .chart-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        justify-content: flex-end;
+    }
+
+    .pillar-wrapper {
+        width: 16px;
+        height: 100%;
+        background: #f1f5f9;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        overflow: hidden;
+    }
+
+    .pillar-fill {
+        width: 100%;
+        background: #86efac;
+        border-radius: 12px;
+        transition: height 0.4s ease;
+    }
+
+    .col-label {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+        font-weight: 600;
+    }
+
+    /* Donut Chart Card (Right Column) */
+    .donut-card {
+        background: #ffffff;
+        border-radius: var(--radius-xl);
+        padding: 1.75rem;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border-subtle);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .donut-visual-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1.25rem 0;
+        position: relative;
+    }
+
+    .css-donut {
+        width: 170px;
+        height: 170px;
+        border-radius: 50%;
+        background: conic-gradient(
+            #a5b4fc 0% 33%,
+            #86efac 33% 56%,
+            #93c5fd 56% 75%,
+            #fde047 75% 88%,
+            #cbd5e1 88% 100%
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .donut-hole {
+        width: 105px;
+        height: 105px;
+        border-radius: 50%;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .donut-legend {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-body);
+    }
+
+    .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .donut-info-pill {
+        margin-top: 1rem;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 0.6rem 0.9rem;
+        border-radius: var(--radius-md);
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Bottom Row: Upcoming Appointments / Requests Cards */
+    .upcoming-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+        .upcoming-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .upcoming-card {
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        padding: 1.35rem;
+        box-shadow: var(--shadow-card);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.85rem;
+        transition: all 0.2s;
+    }
+    .upcoming-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .customer-header-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .customer-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+        color: #3730a3;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .customer-meta h4 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text-heading);
+    }
+
+    .customer-meta p {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .upcoming-date-box {
+        background: #f8fafc;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-md);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.8rem;
+        color: var(--text-body);
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .technician-tag {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    /* Customer Tagging Modal / Form */
+    .service-checkbox-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .tag-badge {
+        background: #e0e7ff;
+        color: #3730a3;
+        border-radius: 12px;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: inline-block;
+        margin-right: 4px;
+        margin-bottom: 4px;
+    }
+
+    /* Lead Funnel & Inquiry Table Styling */
+    .lead-filter-btn {
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        color: var(--text-body);
+        padding: 0.45rem 0.95rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 20px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        transition: all 0.2s ease;
+    }
+    .lead-filter-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+    .lead-filter-btn.active {
+        background: var(--primary);
+        color: #ffffff;
+        border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(67, 56, 202, 0.25);
+    }
+    .lead-filter-btn.active .filter-badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+    }
+    .filter-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        color: #475569;
+    }
+    .badge-amber {
+        background: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fde68a;
+    }
+    .btn-whatsapp {
+        background: #25D366;
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius-md);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        box-shadow: 0 2px 6px rgba(37, 211, 102, 0.25);
+        transition: all 0.2s;
+    }
+    .btn-whatsapp:hover {
+        background: #1eb857;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(37, 211, 102, 0.35);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="card" aria-label="AI connection">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <strong>AI connection: <span id="aiConnectionStatus">{{ ai_connection.status }}</span></strong>
+        <button type="button" class="btn-secondary" id="testAIConnection">Test connection</button>
+    </div>
+    <p id="aiConnectionMessage" role="status">{{ ai_connection.message }}</p>
+    <small id="aiConnectionChecked">{% if ai_connection.checked_at %}Last provider result: {{ ai_connection.checked_at }} · {{ ai_connection.latency_ms }} ms{% else %}A test sends a small diagnostic request to your configured provider.{% endif %}</small>
+</section>
+<div class="workspace-intro"><div><div class="eyebrow">Operations at a glance</div><h2>Good to have you back, {{ user.first_name|default:user.username }}.</h2><p>Keep conversations moving and every service visit on track.</p></div><button type="button" class="btn-primary" onclick="switchTab('tab-bookings')">Review bookings <span aria-hidden="true">↗</span></button></div>
+<!-- Top Pill Navigation (Overview, Services, Conversations, Customers, Bookings, Team) -->
+<div class="top-pill-tabs">
+    <button class="pill-tab-btn active" data-tab="tab-overview">
+        <span> Overview</span>
+    </button>
+    <button class="pill-tab-btn" data-tab="tab-services">
+        <span> AC Services</span>
+        <span class="tab-badge">{{ services_count }}</span>
+    </button>
+    <button class="pill-tab-btn" data-tab="tab-leads" id="tabBtnLeads">
+        <span> Conversations</span>
+        <span class="tab-badge" style="background: #fef08a; color: #854d0e;">{{ hot_leads_count }} Open</span>
+    </button>
+    <button class="pill-tab-btn" data-tab="tab-customers">
+        <span> Customers</span>
+        <span class="tab-badge">{{ customers_count }}</span>
+    </button>
+    <button class="pill-tab-btn" data-tab="tab-bookings">
+        <span> Bookings</span>
+        {% if pending_bookings_count > 0 %}
+            <span class="tab-badge" style="background: #fef08a; color: #854d0e;">{{ pending_bookings_count }} Pending</span>
+        {% else %}
+            <span class="tab-badge">{{ bookings_count }}</span>
+        {% endif %}
+    </button>
+    {% if is_superuser %}
+    <button class="pill-tab-btn" data-tab="tab-users">
+        <span> Team access</span>
+        <span class="tab-badge">{{ users_count }}</span>
+    </button>
+    {% endif %}
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB 1: VISUAL OVERVIEW (MATCHING REFERENCE SCREENSHOT) -->
+<!-- ======================================================== -->
+<div id="tab-overview" class="tab-pane active">
+    <!-- Top 4 KPI Stat Cards (Matching User Business Requirements) -->
+    <div class="kpi-row">
+        <!-- 1. Total AC Services -->
+        <div class="kpi-card" onclick="switchTab('tab-services')" style="cursor: pointer;" title="View all AC services and pricing">
+            <div class="kpi-top">
+                <span class="kpi-label">Total AC Services</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div>
+                    <div class="kpi-num">{{ services_count }}</div>
+                    <div class="kpi-trend up">● {{ active_services_count }} active services</div>
+                </div>
+                <div class="micro-chart-bars">
+                    <div class="micro-bar" style="height: 40%;"></div>
+                    <div class="micro-bar" style="height: 60%;"></div>
+                    <div class="micro-bar highlight" style="height: 90%;"></div>
+                    <div class="micro-bar highlight" style="height: 75%;"></div>
+                    <div class="micro-bar highlight" style="height: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Customer conversations -->
+        <div class="kpi-card" onclick="jumpToLeadCategory('ALL')" style="cursor: pointer;" title="Click to view all chatted customer inquiries">
+            <div class="kpi-top">
+                <span class="kpi-label">Conversations</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div>
+                    <div class="kpi-num">{{ chatted_customers_count }}</div>
+                    <div class="kpi-trend up"> {{ total_messages_count }} messages recorded</div>
+                </div>
+                <div style="font-size: 1.4rem; opacity: 0.7;"></div>
+            </div>
+        </div>
+
+        <!-- 3. Total Bookings through Chatbot -->
+        <div class="kpi-card" onclick="jumpToLeadCategory('BOOKED')" style="cursor: pointer;" title="Click to view booked customers">
+            <div class="kpi-top">
+                <span class="kpi-label">Service bookings</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div>
+                    <div class="kpi-num">{{ chatbot_bookings_count }}</div>
+                    <div class="kpi-trend {% if pending_bookings_count > 0 %}down{% else %}up{% endif %}">
+                        {% if pending_bookings_count > 0 %}
+                            ⏳ {{ pending_bookings_count }} Awaiting Owner Review
+                        {% else %}
+                             No requests awaiting review
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="micro-chart-bars">
+                    <div class="micro-bar" style="height: 30%;"></div>
+                    <div class="micro-bar" style="height: 50%;"></div>
+                    <div class="micro-bar highlight" style="height: 80%;"></div>
+                    <div class="micro-bar" style="height: 60%;"></div>
+                    <div class="micro-bar highlight" style="height: 95%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Hot Leads: Chatted but Didn't Book Yet -->
+        <div class="kpi-card" onclick="jumpToLeadCategory('HOT_LEAD')" style="cursor: pointer; border: 1.5px solid #fed7aa;" title="Click to view hot leads who chatted & explored prices without booking yet">
+            <div class="kpi-top">
+                <span class="kpi-label" style="color: #c2410c;">Inquiries without bookings</span>
+                <div class="kpi-icon-pill" style="background: #fffbeb; color: #b45309;"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div>
+                    <div class="kpi-num" style="color: #ea580c;">{{ hot_leads_count }}</div>
+                    <div class="kpi-trend down" style="color: #b45309;"> Conversations to follow up</div>
+                </div>
+                <div class="micro-gauge"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="overview-panels">
+        <section class="card"><div class="card-header"><div><div class="eyebrow">Next steps</div><h3 class="card-title">Your attention, where it matters</h3></div><span class="badge badge-green">Live records</span></div>
+            <div class="queue-row"><div><strong>Booking requests</strong><small>Review preferred dates and confirm a visit.</small></div><button type="button" class="btn-secondary" onclick="switchTab('tab-bookings')">{{ pending_bookings_count }} pending ↗</button></div>
+            <div class="queue-row"><div><strong>Waiting for a person</strong><small>Customers who need your team's help.</small></div><button type="button" class="btn-secondary" onclick="switchTab('tab-leads');setLeadFilter2('HANDOVER')">{{ handover_leads_count }} waiting ↗</button></div>
+            <div class="queue-row"><div><strong>Delivery attention</strong><small>Failed or blocked messages needing review.</small></div><a class="btn-secondary" href="/admin/whatsapp/whatsappdelivery/">{{ delivery_attention_count }} messages ↗</a></div>
+        </section>
+        <section class="card"><div class="card-header"><div><div class="eyebrow">Coming up</div><h3 class="card-title">Latest booking requests</h3></div><button type="button" class="text-action" onclick="switchTab('tab-bookings')">View all ↗</button></div>
+        {% for booking in bookings|slice:":3" %}<div class="queue-row"><div><strong>{{ booking.customer.name|default:booking.customer.phone_number }}</strong><small>{{ booking.service.name|default:"Service visit" }} · #{{ booking.id }}</small></div><span class="badge {% if booking.status == 'CONFIRMED' %}badge-green{% else %}badge-yellow{% endif %}">{{ booking.get_status_display }}</span></div>{% empty %}<div class="empty-state">No booking requests yet.<br>New requests will appear here.</div>{% endfor %}
+        </section>
+    </div>
+
+    <div class="card" id="leadFunnelSection" style="margin-bottom: 1.75rem;">
+        <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.3rem;"></span>
+                    <h3 class="card-title">Customer conversations</h3>
+                    <span class="badge badge-amber" style="font-size: 0.72rem;">{{ hot_leads_count }} open inquiries</span>
+                </div>
+                <p class="card-subtitle">Search conversations, review requests, and help customers waiting for your team.</p>
+            </div>
+            
+            <!-- Real-time Search Box -->
+            <div style="position: relative; min-width: 260px;">
+                <input type="text" id="leadSearchInput" class="form-input" placeholder=" Search phone or inquiry..." style="padding-left: 2rem; border-radius: 20px; font-size: 0.82rem;" onkeyup="filterLeads()">
+            </div>
+        </div>
+
+        <!-- Interactive Category Filter Buttons -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);">
+            <button class="lead-filter-btn active" data-category="ALL" onclick="setLeadFilter('ALL', this)">
+                <span>All Chatted Customers</span>
+                <span class="filter-badge">{{ chatted_customers_count }}</span>
+            </button>
+            <button class="lead-filter-btn" data-category="HOT_LEAD" onclick="setLeadFilter('HOT_LEAD', this)" style="border-color: #fde68a;">
+                <span> Open inquiries</span>
+                <span class="filter-badge" style="background: #fef3c7; color: #b45309;">{{ hot_leads_count }}</span>
+            </button>
+            <button class="lead-filter-btn" data-category="BOOKED" onclick="setLeadFilter('BOOKED', this)">
+                <span> With bookings</span>
+                <span class="filter-badge" style="background: #dcfce7; color: #15803d;">{{ booked_leads_count }}</span>
+            </button>
+            <button class="lead-filter-btn" data-category="HANDOVER" onclick="setLeadFilter('HANDOVER', this)">
+                <span> Human Handover Needed</span>
+                <span class="filter-badge" style="background: #fef9c3; color: #a16207;">{{ handover_leads_count }}</span>
+            </button>
+        </div>
+
+        <!-- Filterable Inquiries Table -->
+        <div style="overflow-x: auto;">
+            <table class="leads-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Customer Phone Number</th>
+                        <th style="padding: 0.75rem;">Lead Category</th>
+                        <th style="padding: 0.75rem;">Service Inquired</th>
+                        <th style="padding: 0.75rem;">Engagement</th>
+                        <th style="padding: 0.75rem;">Last Customer Message</th>
+                        <th style="padding: 0.75rem;">Last Active</th>
+                        <th style="padding: 0.75rem; text-align: right;">Staff Follow-up</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTableBody">
+                    {% for lead in inquiry_leads %}
+                    <tr class="lead-row" data-category="{{ lead.category }}" data-search="{{ lead.customer.phone_number }} {{ lead.customer.name|default:'' }} {{ lead.last_message_text }} {{ lead.service_name }}" style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: {% if lead.category == 'HOT_LEAD' %}#fff7ed; color: #ea580c; border: 1px solid #fed7aa;{% elif lead.category == 'BOOKED' %}#f0fdf4; color: #16a34a; border: 1px solid #dcfce7;{% else %}#f8fafc; color: #64748b;{% endif %} display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">
+                                    {% if lead.category == 'HOT_LEAD' %}{% elif lead.category == 'BOOKED' %}{% else %}{% endif %}
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-heading); font-size: 0.92rem;">{{ lead.customer.phone_number }}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ lead.customer.name|default:"WhatsApp Prospect" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if lead.category == 'HOT_LEAD' %}
+                                <span class="badge badge-amber" title="Chatted and explored services/prices, but hasn't booked yet! High intent.">
+                                     Open inquiry
+                                </span>
+                            {% elif lead.category == 'BOOKED' %}
+                                <span class="badge badge-green">
+                                    {{ lead.category_label }}
+                                </span>
+                            {% elif lead.category == 'HANDOVER' %}
+                                <span class="badge badge-yellow">
+                                     Human Handover
+                                </span>
+                            {% else %}
+                                <span class="badge badge-blue">Chatting</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span style="font-weight: 600; color: var(--text-heading);">{{ lead.service_name }}</span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: #f1f5f9; padding: 3px 8px; border-radius: 12px; font-size: 0.76rem; font-weight: 700; color: #475569;">
+                                 {{ lead.total_messages }} msgs
+                            </span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; max-width: 260px;">
+                            <div style="font-size: 0.82rem; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ lead.last_message_text }}">
+                                “{{ lead.last_message_text|truncatechars:65 }}”
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
+                            {{ lead.last_active|timesince }} ago
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; text-align: right;">
+                            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
+                                {% if lead.conv_id %}
+                                <button type="button" class="btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 0.3rem;" onclick="openConversationModal({{ lead.conv_id }})">
+                                    <span> View Chat</span>
+                                </button>
+                                {% endif %}
+                                <a href="https://wa.me/{{ lead.clean_phone }}?text={% if lead.category == 'HOT_LEAD' %}Hello!%20We%20noticed%20you%20were%20inquiring%20about%20our%20{{ lead.service_name|urlencode }}%20services.%20How%20can%20our%20team%20help%20you?{% elif lead.category == 'BOOKED' %}Hello!%20Thank%20you%20for%20booking%20with%20CoolBreeze.%20Our%20technician%20is%20ready%20to%20help%20you!{% else %}Hello!%20Support%20team%20here%20from%20CoolBreeze.%20How%20can%20we%20assist%20you%20with%20your%20inquiry?{% endif %}" target="_blank" class="btn-whatsapp" title="Chat directly with customer on WhatsApp">
+                                    <span> Follow up</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                            No chatted customer inquiries recorded yet. When users message your WhatsApp bot, they will be categorized here automatically!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bottom Row: Upcoming Bookings / Customers (Matching Screenshot) -->
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Upcoming Bookings & Appointments</h3>
+                <p class="card-subtitle">Scheduled customer visits awaiting review or in progress</p>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="switchTab('tab-bookings')">View All Bookings ↗</button>
+            </div>
+        </div>
+
+        <div class="upcoming-row">
+            {% for b in upcoming_bookings %}
+            <div class="upcoming-card">
+                <div class="customer-header-row">
+                    <div class="customer-avatar">{{ b.customer.name|default:"C"|first|upper }}</div>
+                    <div class="customer-meta">
+                        <h4>{{ b.customer.name|default:b.customer.phone_number }}</h4>
+                        <p>{{ b.service.name|default:"General AC Check-up" }}</p>
+                    </div>
+                </div>
+
+                <div class="upcoming-date-box">
+                    <div> <strong>{{ b.preferred_date|default:"Flexible Date" }}</strong> &bull; {{ b.preferred_time_slot|default:"Flexible Slot" }}</div>
+                    <div class="technician-tag">
+                        <span>‍ Scheduling handled by the service team</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem;">
+                    {% if b.status == 'PENDING' %}
+                        <span class="badge badge-yellow">● Pending Review</span>
+                        <form method="post" action="{% url 'booking-action' b.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="confirm">
+                            <button type="submit" class="btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">Confirm</button>
+                        </form>
+                    {% elif b.status == 'CONFIRMED' %}
+                        <span class="badge badge-green"> Confirmed</span>
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">Visit confirmed</span>
+                    {% else %}
+                        <span class="badge badge-blue"> Completed</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--text-muted);">
+                No upcoming bookings yet. Customers can book via their WhatsApp helpline!
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB: CHATTED LEADS & INQUIRIES (FOCUSED STAFF WORKSPACE) -->
+<!-- ======================================================== -->
+<div id="tab-leads" class="tab-pane">
+    <section class="card" aria-label="Human support queue">
+        <h3 class="card-title">Human support queue</h3>
+        <p class="card-subtitle">Open a chat to pick it up. Release it when another team member should continue.</p>
+        {% for chat in handover_queue %}
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-light)">
+            <span>{{ chat.customer.name|default:chat.customer.phone_number }} · {% if chat.assigned_staff %}Picked up by {{ chat.assigned_staff.get_full_name|default:chat.assigned_staff.username }}{% else %}Waiting for pickup{% endif %}</span>
+            <button type="button" class="btn-secondary" onclick="openConversationModal({{ chat.pk }})">Open chat</button>
+        </div>
+        {% empty %}<p>No conversations waiting for human support.</p>{% endfor %}
+    </section>
+    <!-- Leads Summary KPI Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div class="kpi-card" onclick="setLeadFilter('ALL')" style="cursor: pointer;">
+            <div class="kpi-top">
+                <span class="kpi-label">Total Chatted Visitors</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div class="kpi-num">{{ chatted_customers_count }}</div>
+                <div class="kpi-trend up">All Inquiries</div>
+            </div>
+        </div>
+
+        <div class="kpi-card" onclick="setLeadFilter('HOT_LEAD')" style="cursor: pointer; border: 1.5px solid #fed7aa; background: #fffcf8;">
+            <div class="kpi-top">
+                <span class="kpi-label" style="color: #c2410c;"> Inquiries without bookings</span>
+                <div class="kpi-icon-pill" style="background: #fffbeb; color: #b45309;"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div class="kpi-num" style="color: #ea580c;">{{ hot_leads_count }}</div>
+                <div class="kpi-trend down" style="color: #b45309;">Chatted & Need Follow-Up</div>
+            </div>
+        </div>
+
+        <div class="kpi-card" onclick="setLeadFilter('BOOKED')" style="cursor: pointer;">
+            <div class="kpi-top">
+                <span class="kpi-label">Customers with bookings</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div class="kpi-num" style="color: #16a34a;">{{ booked_leads_count }}</div>
+                <div class="kpi-trend up">Converted Clients</div>
+            </div>
+        </div>
+
+        <div class="kpi-card" onclick="setLeadFilter('HANDOVER')" style="cursor: pointer;">
+            <div class="kpi-top">
+                <span class="kpi-label">Human Support Needed</span>
+                <div class="kpi-icon-pill"></div>
+            </div>
+            <div class="kpi-value-row">
+                <div class="kpi-num" style="color: #ca8a04;">{{ handover_leads_count }}</div>
+                <div class="kpi-trend down" style="color: #ca8a04;">Awaiting Staff Attention</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leads Management Card -->
+    <div class="card">
+        <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h3 class="card-title"> WhatsApp Inquiries & Conversion Pipeline</h3>
+                <p class="card-subtitle">Reach out directly to interested prospects via one-click WhatsApp links before they look elsewhere.</p>
+            </div>
+            <div style="position: relative; min-width: 260px;">
+                <input type="text" id="leadSearchInput2" class="form-input" placeholder=" Search phone or message..." style="padding-left: 2rem; border-radius: 20px; font-size: 0.82rem;" onkeyup="filterLeads2()">
+            </div>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-light);">
+            <button class="lead-filter-btn2 active" data-category="ALL" onclick="setLeadFilter2('ALL', this)">
+                <span>All Inquiries</span>
+                <span class="filter-badge">{{ chatted_customers_count }}</span>
+            </button>
+            <button class="lead-filter-btn2" data-category="HOT_LEAD" onclick="setLeadFilter2('HOT_LEAD', this)" style="border-color: #fde68a;">
+                <span> Open inquiries</span>
+                <span class="filter-badge" style="background: #fef3c7; color: #b45309;">{{ hot_leads_count }}</span>
+            </button>
+            <button class="lead-filter-btn2" data-category="BOOKED" onclick="setLeadFilter2('BOOKED', this)">
+                <span> With bookings</span>
+                <span class="filter-badge" style="background: #dcfce7; color: #15803d;">{{ booked_leads_count }}</span>
+            </button>
+            <button class="lead-filter-btn2" data-category="HANDOVER" onclick="setLeadFilter2('HANDOVER', this)">
+                <span> Human Handover</span>
+                <span class="filter-badge" style="background: #fef9c3; color: #a16207;">{{ handover_leads_count }}</span>
+            </button>
+        </div>
+
+        <!-- Table -->
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Customer Phone Number</th>
+                        <th style="padding: 0.75rem;">Status / Category</th>
+                        <th style="padding: 0.75rem;">Service Inquired</th>
+                        <th style="padding: 0.75rem;">Messages</th>
+                        <th style="padding: 0.75rem;">Last Customer Inquiry</th>
+                        <th style="padding: 0.75rem;">Last Active</th>
+                        <th style="padding: 0.75rem; text-align: right;">Staff Follow-up</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsTableBody2">
+                    {% for lead in inquiry_leads %}
+                    <tr class="lead-row2" data-category="{{ lead.category }}" data-search="{{ lead.customer.phone_number }} {{ lead.customer.name|default:'' }} {{ lead.last_message_text }} {{ lead.service_name }}" style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                <div style="width: 36px; height: 36px; border-radius: 50%; background: {% if lead.category == 'HOT_LEAD' %}#fff7ed; color: #ea580c; border: 1px solid #fed7aa;{% elif lead.category == 'BOOKED' %}#f0fdf4; color: #16a34a; border: 1px solid #dcfce7;{% else %}#f8fafc; color: #64748b;{% endif %} display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem;">
+                                    {% if lead.category == 'HOT_LEAD' %}{% elif lead.category == 'BOOKED' %}{% else %}{% endif %}
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-heading); font-size: 0.92rem;">{{ lead.customer.phone_number }}</strong>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ lead.customer.name|default:"WhatsApp Prospect" }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if lead.category == 'HOT_LEAD' %}
+                                <span class="badge badge-amber"> Open inquiry</span>
+                            {% elif lead.category == 'BOOKED' %}
+                                <span class="badge badge-green">{{ lead.category_label }}</span>
+                            {% elif lead.category == 'HANDOVER' %}
+                                <span class="badge badge-yellow"> Human Handover</span>
+                            {% else %}
+                                <span class="badge badge-blue">Chatting</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong style="color: var(--text-heading);">{{ lead.service_name }}</strong>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span style="display: inline-flex; align-items: center; gap: 0.3rem; background: #f1f5f9; padding: 3px 8px; border-radius: 12px; font-size: 0.76rem; font-weight: 700; color: #475569;">
+                                 {{ lead.total_messages }} msgs
+                            </span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; max-width: 260px;">
+                            <div style="font-size: 0.82rem; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ lead.last_message_text }}">
+                                “{{ lead.last_message_text|truncatechars:65 }}”
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; font-size: 0.78rem; color: var(--text-muted); white-space: nowrap;">
+                            {{ lead.last_active|timesince }} ago
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; text-align: right;">
+                            <div style="display: inline-flex; gap: 0.4rem; justify-content: flex-end;">
+                                {% if lead.conv_id %}
+                                <button type="button" class="btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;" onclick="openConversationModal({{ lead.conv_id }})">
+                                    <span> View Chat</span>
+                                </button>
+                                {% endif %}
+                                <a href="https://wa.me/{{ lead.clean_phone }}?text={% if lead.category == 'HOT_LEAD' %}Hello!%20We%20noticed%20you%20were%20inquiring%20about%20our%20{{ lead.service_name|urlencode }}%20services.%20How%20can%20our%20team%20help%20you?{% elif lead.category == 'BOOKED' %}Hello!%20Thank%20you%20for%20booking%20with%20CoolBreeze.%20Our%20technician%20is%20ready%20to%20help%20you!{% else %}Hello!%20Support%20team%20here%20from%20CoolBreeze.%20How%20can%20we%20assist%20you%20with%20your%20inquiry?{% endif %}" target="_blank" class="btn-whatsapp">
+                                    <span> Follow up</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                            No WhatsApp inquiries received yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB 2: AC SERVICES & PRICING -->
+<!-- ======================================================== -->
+<div id="tab-services" class="tab-pane">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Add New AC Service</h3>
+                <p class="card-subtitle">Manage service details, customer pricing, and contact information.</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'service-create' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Service Name *</label>
+                    {{ service_form.name }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Category</label>
+                    {{ service_form.category }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Pricing Structure *</label>
+                    {{ service_form.price_type }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Price Amount (INR) *</label>
+                    {{ service_form.price_amount }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Dedicated Helpline / WhatsApp Number</label>
+                    {{ service_form.contact_number }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Est. Duration</label>
+                    {{ service_form.estimated_duration }}
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Service Description</label>
+                    {{ service_form.description }}
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
+                        {{ service_form.is_active }}
+                        <span>Active Service (Immediately available to customers)</span>
+                    </label>
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary">Save & Sync Service to AI Vector Store</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Services Catalog Table -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Active Services Catalog</h3>
+                <p class="card-subtitle">Each service has a dedicated contact number for customer inquiries</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Service Name</th>
+                        <th style="padding: 0.75rem;">Category</th>
+                        <th style="padding: 0.75rem;">Dedicated Contact Number</th>
+                        <th style="padding: 0.75rem;">Price</th>
+                        <th style="padding: 0.75rem;">Duration</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                        <th style="padding: 0.75rem;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in services %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>{{ s.name }}</strong>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span class="badge badge-purple">{{ s.category }}</span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span class="badge badge-green"> {{ s.contact_number|default:"+91 98765 43210" }}</span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; font-weight: 800; color: #059669;">
+                            {{ s.formatted_price }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; color: var(--text-muted);">
+                            {{ s.estimated_duration|default:"-" }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if s.is_active %}
+                                <span class="badge badge-green">Active</span>
+                            {% else %}
+                                <span class="badge badge-red">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <form method="post" action="{% url 'service-toggle' s.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                {% if s.is_active %}
+                                    <button type="submit" class="btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.78rem; color: #e11d48;">Deactivate</button>
+                                {% else %}
+                                    <button type="submit" class="btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.78rem;">Activate</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB 3: CUSTOMERS & SERVICE TAGGING -->
+<!-- ======================================================== -->
+<div id="tab-customers" class="tab-pane">
+    <!-- Add Customer Form -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Add New Customer & Tag Services</h3>
+                <p class="card-subtitle">Customers can only see and chat under their tagged services</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'customer-create' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Customer Full Name *</label>
+                    {{ customer_form.name }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Phone Number (Used for Login & Chat) *</label>
+                    {{ customer_form.phone_number }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Email (Optional)</label>
+                    {{ customer_form.email }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Customer Portal Password (Optional)</label>
+                    {{ customer_form.portal_password }}
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-heading); display: block; margin-bottom: 6px;">
+                         Tag Services to Customer (Customer only sees selected services):
+                    </label>
+                    <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1rem;">
+                        {{ customer_form.tagged_services }}
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary">Register Customer & Tag Services</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Registered Customers List with Tagged Services -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Registered Customers & Assigned Services</h3>
+                <p class="card-subtitle">Manage customer profiles and update tagged services anytime</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Customer</th>
+                        <th style="padding: 0.75rem;">Phone Number</th>
+                        <th style="padding: 0.75rem;">Tagged Services</th>
+                        <th style="padding: 0.75rem;">Portal Login</th>
+                        <th style="padding: 0.75rem;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in customers %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                                <div class="customer-avatar" style="width: 34px; height: 34px; font-size: 0.9rem;">{{ c.name|default:"C"|first|upper }}</div>
+                                <div>
+                                    <strong>{{ c.name|default:"Customer" }}</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>{{ c.phone_number }}</strong>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% for ts in c.assigned_services.all %}
+                                <span class="tag-badge">{{ ts.name }} ({{ ts.contact_number }})</span>
+                            {% empty %}
+                                <span style="font-size: 0.78rem; color: var(--text-muted);">No services tagged</span>
+                            {% endfor %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if c.user %}
+                                <span class="badge badge-green">Enabled (User: {{ c.user.username }})</span>
+                            {% else %}
+                                <span class="badge badge-yellow">No Login Account</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <button class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;" onclick="openTagModal({{ c.id }}, '{{ c.name|escapejs }}')">
+                                <span> Edit Tagged Services</span>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                            No customers registered yet. Add a customer above!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB 4: BOOKINGS & APPOINTMENTS -->
+<!-- ======================================================== -->
+<div id="tab-bookings" class="tab-pane">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> All Customer Service Appointments</h3>
+                <p class="card-subtitle">Review, confirm, or reject appointments requested via WhatsApp chat</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Booking ID</th>
+                        <th style="padding: 0.75rem;">Customer</th>
+                        <th style="padding: 0.75rem;">Service Requested</th>
+                        <th style="padding: 0.75rem;">Service Address</th>
+                        <th style="padding: 0.75rem;">Preferred Slot</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                        <th style="padding: 0.75rem;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;"><strong>#{{ b.id }}</strong></td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>{{ b.customer.phone_number }}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ b.customer.name }}{% if b.recipient_name %}<br>Service recipient: {{ b.recipient_name }}{% endif %}</div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>{{ b.service.name|default:"Custom Repair" }}</strong>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; font-size: 0.82rem;">
+                            {{ b.service_address|default:"Not specified" }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; font-size: 0.82rem;">
+                            {{ b.preferred_date|default:"Flexible" }} &bull; {{ b.preferred_time_slot|default:"Anytime" }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if b.status == 'PENDING' %}
+                                <span class="badge badge-yellow">● Pending</span>
+                            {% elif b.status == 'CONFIRMED' %}
+                                <span class="badge badge-green"> Confirmed</span>
+                            {% elif b.status == 'COMPLETED' %}
+                                <span class="badge badge-blue"> Completed</span>
+                            {% else %}
+                                <span class="badge badge-red">{{ b.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if b.status == 'PENDING' %}
+                            <form method="post" action="{% url 'booking-action' b.id %}" style="display: inline-flex; gap: 0.35rem;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="confirm">
+                                <button type="submit" class="btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;">Confirm</button>
+                            </form>
+                            <form method="post" action="{% url 'booking-action' b.id %}" style="display: inline-flex; gap: 0.35rem;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <button type="submit" class="btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem; color: #e11d48;">Reject</button>
+                            </form>
+                            {% elif b.status == 'CONFIRMED' %}
+                            <form method="post" action="{% url 'booking-action' b.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="complete">
+                                <button type="submit" class="btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem; color: #16a34a;">Mark Done</button>
+                            </form>
+                            {% else %}
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--text-muted);">
+                            No service bookings recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- TAB 5: TEAM & RBAC (SUPERADMIN ONLY) -->
+<!-- ======================================================== -->
+{% if is_superuser %}
+<div id="tab-users" class="tab-pane">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Create Staff / Operator Account</h3>
+                <p class="card-subtitle">Role-Based Access Control: Staff can manage services & bookings; Superadmin has full permissions.</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'user-create' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Username *</label>
+                    {{ user_form.username }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Password *</label>
+                    {{ user_form.password }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">First Name</label>
+                    {{ user_form.first_name }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Role *</label>
+                    {{ user_form.role }}
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary">Create User Account</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Authorized Users Table -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Authorized System Users</h3>
+                <p class="card-subtitle">All staff members and superadmins in the system</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">User</th>
+                        <th style="padding: 0.75rem;">Role</th>
+                        <th style="padding: 0.75rem;">Date Joined</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in team_users %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>@{{ u.username }}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.first_name }} {{ u.last_name }}</div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if u.is_superuser %}
+                                <span class="badge badge-purple"> Superadmin</span>
+                            {% elif u.is_staff %}
+                                <span class="badge badge-blue">Staff Member</span>
+                            {% else %}
+                                <span class="badge badge-green">Customer</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; color: var(--text-muted); font-size: 0.82rem;">
+                            {{ u.date_joined|date:"M d, Y" }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if u.is_active %}
+                                <span class="badge badge-green">Active</span>
+                            {% else %}
+                                <span class="badge badge-red">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal for Tagging Services to a Customer -->
+<div id="tagServiceModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 100;">
+    <div style="background: white; border-radius: var(--radius-xl); padding: 2rem; width: 100%; max-width: 550px; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+                <h3 id="tagModalTitle" style="font-size: 1.2rem; color: var(--text-heading); font-weight: 700;">Tag Services</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">Select the services this customer should have access to</p>
+            </div>
+            <button onclick="closeTagModal()" style="border: none; background: transparent; font-size: 1.25rem; cursor: pointer; color: var(--text-muted);"></button>
+        </div>
+
+        <form id="tagServiceForm" method="post" action="">
+            {% csrf_token %}
+            <div style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.5rem;">
+                {% for s in services %}
+                <label style="display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: var(--radius-md); background: #f8fafc; border: 1px solid var(--border-light); cursor: pointer;">
+                    <input type="checkbox" name="service_ids" value="{{ s.id }}" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-heading);">{{ s.name }}</div>
+                        <div style="font-size: 0.75rem; color: #15803d;"> {{ s.contact_number|default:"+91 98765 43210" }} &bull; {{ s.formatted_price }}</div>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <button type="button" class="btn-secondary" onclick="closeTagModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Update Tagged Services</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: FULL CONVERSATION TRANSCRIPT & WHATSAPP CHAT -->
+<!-- ======================================================== -->
+<div id="chatTranscriptModal" role="dialog" aria-modal="true" aria-labelledby="modalChatTitle" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: white; border-radius: var(--radius-xl); width: 100%; max-width: 620px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden; animation: fadeIn 0.2s ease;">
+        <!-- Header -->
+        <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.2rem;"></span>
+                    <h3 id="modalChatTitle" style="font-size: 1.1rem; color: var(--text-heading); font-weight: 700;">Customer Chat Transcript</h3>
+                    <span id="modalChatStatus" class="badge badge-green">Bot Active</span>
+                </div>
+                <p id="modalChatSubtitle" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Loading customer details...</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <a id="modalChatWaLink" href="#" target="_blank" class="btn-whatsapp" title="Direct WhatsApp Chat">
+                    <span> WhatsApp</span>
+                </a>
+                <button onclick="closeConversationModal()" style="border: none; background: transparent; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); padding: 4px;"></button>
+            </div>
+        </div>
+
+        <!-- Scrollable Messages Area -->
+        <div id="modalChatMessages" style="padding: 1.25rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.85rem; background: #fdfefe; min-height: 300px; max-height: 480px;">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading chat transcript...</div>
+        </div>
+
+        <div id="handoffSummary" style="padding:12px 20px;white-space:pre-wrap;font-size:11px;background:#f3f8f6;max-height:140px;overflow:auto" hidden></div>
+        <div style="padding:12px 20px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span id="supportOwner" role="status"></span>
+            <button id="claimChatButton" type="button" class="btn-secondary">Pick up chat</button>
+            <button id="releaseChatButton" type="button" class="btn-secondary">Release to team</button>
+            <button id="pauseBotButton" type="button" class="btn-secondary">Pause assistant</button>
+        </div>
+        <form id="staffReplyForm" style="padding:12px 20px;display:flex;gap:8px;border-top:1px solid #e4ebed"><label class="sr-only" for="staffReply">Reply to customer</label><input id="staffReply" class="form-input" maxlength="2000" placeholder="Write a personal reply…" required><button class="btn-primary" type="submit">Send reply</button></form>
+        <div style="padding:0 20px 12px;display:flex;align-items:center;gap:10px"><button id="resumeBotButton" type="button" class="btn-secondary">Resume assistant</button><span id="conversationActionFeedback" role="status" style="font-size:11px"></span></div>
+        <!-- Footer -->
+        <div style="padding: 0.85rem 1.25rem; border-top: 1px solid var(--border-light); background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Saved conversation history</span>
+            <button type="button" class="btn-secondary" onclick="closeConversationModal()" style="padding: 0.4rem 0.9rem; font-size: 0.8rem;">Close</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.pill-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+        });
+        document.querySelectorAll('.nav-icon-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
+        });
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.classList.toggle('active', pane.id === tabId);
+        });
+        window.location.hash = tabId.replace('tab-', '');
+    }
+
+    document.querySelectorAll('.pill-tab-btn, .nav-icon-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tab = btn.getAttribute('data-tab');
+            if (tab) switchTab(tab);
+        });
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hash = window.location.hash.replace('#', '');
+        if (hash) {
+            const target = 'tab-' + hash;
+            if (document.getElementById(target)) {
+                switchTab(target);
+            }
+        }
+    });
+
+    function openTagModal(customerId, customerName) {
+        document.getElementById('tagModalTitle').textContent = `Tag Services for ${customerName}`;
+        document.getElementById('tagServiceForm').action = `/customers/${customerId}/tag/`;
+        document.getElementById('tagServiceModal').style.display = 'flex';
+    }
+
+    function closeTagModal() {
+        document.getElementById('tagServiceModal').style.display = 'none';
+    }
+
+    // Lead Funnel 1 Filtering (in Overview Tab)
+    function setLeadFilter(category, btnElem) {
+        document.querySelectorAll('.lead-filter-btn').forEach(b => b.classList.remove('active'));
+        if (btnElem) {
+            btnElem.classList.add('active');
+        } else {
+            const btn = document.querySelector(`.lead-filter-btn[data-category="${category}"]`);
+            if (btn) btn.classList.add('active');
+        }
+        filterLeads();
+    }
+
+    function filterLeads() {
+        const activeBtn = document.querySelector('.lead-filter-btn.active');
+        const selectedCategory = activeBtn ? activeBtn.getAttribute('data-category') : 'ALL';
+        const searchInput = document.getElementById('leadSearchInput');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const rows = document.querySelectorAll('.lead-row');
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-category');
+            const searchData = row.getAttribute('data-search').toLowerCase();
+
+            const matchCategory = (selectedCategory === 'ALL' || rowCat === selectedCategory);
+            const matchSearch = (!query || searchData.includes(query));
+
+            row.style.display = (matchCategory && matchSearch) ? '' : 'none';
+        });
+    }
+
+    // Lead Funnel 2 Filtering (in Dedicated Leads Tab)
+    function setLeadFilter2(category, btnElem) {
+        document.querySelectorAll('.lead-filter-btn2').forEach(b => b.classList.remove('active'));
+        if (btnElem) {
+            btnElem.classList.add('active');
+        } else {
+            const btn = document.querySelector(`.lead-filter-btn2[data-category="${category}"]`);
+            if (btn) btn.classList.add('active');
+        }
+        filterLeads2();
+    }
+
+    function filterLeads2() {
+        const activeBtn = document.querySelector('.lead-filter-btn2.active');
+        const selectedCategory = activeBtn ? activeBtn.getAttribute('data-category') : 'ALL';
+        const searchInput = document.getElementById('leadSearchInput2');
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const rows = document.querySelectorAll('.lead-row2');
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-category');
+            const searchData = row.getAttribute('data-search').toLowerCase();
+
+            const matchCategory = (selectedCategory === 'ALL' || rowCat === selectedCategory);
+            const matchSearch = (!query || searchData.includes(query));
+
+            row.style.display = (matchCategory && matchSearch) ? '' : 'none';
+        });
+    }
+
+    // Quick jump from KPI Cards to Lead Funnel Category
+    function jumpToLeadCategory(category) {
+        switchTab('tab-overview');
+        const section = document.getElementById('leadFunnelSection');
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth' });
+        }
+        setLeadFilter(category);
+    }
+
+    // Open Interactive Chat Transcript Modal
+    let selectedConversationId = null;
+    function openConversationModal(convId) {
+        selectedConversationId = convId;
+        const modal = document.getElementById('chatTranscriptModal');
+        const container = document.getElementById('modalChatMessages');
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading chat transcript...</div>';
+        modal.style.display = 'flex';
+
+        fetch(`/conversations/${convId}/messages/`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modalChatTitle').textContent = `${data.customer_phone}`;
+                document.getElementById('modalChatSubtitle').textContent = `Customer: ${data.customer_name} • Inquired: ${data.service}`;
+                document.getElementById('modalChatStatus').textContent = data.status;
+                document.getElementById('supportOwner').textContent = data.handover_required ?
+                    (data.assigned_staff ? `Picked up by ${data.assigned_staff.name}` : 'Waiting for team pickup') : 'Assistant is active';
+                document.getElementById('claimChatButton').hidden = !data.handover_required || !!data.assigned_staff;
+                document.getElementById('releaseChatButton').hidden = !data.assigned_staff || !data.can_manage;
+                document.getElementById('pauseBotButton').hidden = data.handover_required;
+                document.getElementById('resumeBotButton').disabled = !data.can_manage;
+                document.getElementById('staffReply').disabled = !data.can_manage;
+                document.querySelector('#staffReplyForm button').disabled = !data.can_manage;
+                document.getElementById('handoffSummary').textContent = data.handoff_summary || '';
+                document.getElementById('handoffSummary').hidden = !data.handoff_summary;
+
+                const cleanPhone = data.customer_phone.replace(/\D/g, '');
+                const fullPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+                document.getElementById('modalChatWaLink').href = `https://wa.me/${fullPhone}?text=Hello%20${encodeURIComponent(data.customer_name)},%20following%20up%20on%20your%20inquiry%20regarding%20${encodeURIComponent(data.service)}.`;
+
+                if (!data.messages || data.messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 2rem;">No messages recorded in this chat yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.messages.forEach(msg => {
+                    const isCustomer = (msg.direction === 'INBOUND' || msg.sender_type === 'CUSTOMER');
+                    const bubbleWrap = document.createElement('div');
+                    bubbleWrap.style.display = 'flex';
+                    bubbleWrap.style.flexDirection = 'column';
+                    bubbleWrap.style.alignItems = isCustomer ? 'flex-start' : 'flex-end';
+                    bubbleWrap.style.marginBottom = '0.5rem';
+
+                    const meta = document.createElement('div');
+                    meta.style.fontSize = '0.7rem';
+                    meta.style.color = '#94a3b8';
+                    meta.style.marginBottom = '2px';
+                    meta.textContent = `${isCustomer ? 'Customer' : (msg.sender_type === 'HUMAN' ? 'Service team' : 'Service assistant')} • ${msg.timestamp}`;
+
+                    const bubble = document.createElement('div');
+                    bubble.style.maxWidth = '80%';
+                    bubble.style.padding = '0.7rem 1rem';
+                    bubble.style.borderRadius = '16px';
+                    bubble.style.fontSize = '0.85rem';
+                    bubble.style.lineHeight = '1.45';
+                    bubble.style.wordBreak = 'break-word';
+
+                    if (isCustomer) {
+                        bubble.style.background = '#f1f5f9';
+                        bubble.style.color = '#0f172a';
+                        bubble.style.borderBottomLeftRadius = '4px';
+                    } else {
+                        bubble.style.background = '#087f79';
+                        bubble.style.color = '#ffffff';
+                        bubble.style.borderBottomRightRadius = '4px';
+                    }
+                    bubble.textContent = msg.text;
+
+                    bubbleWrap.appendChild(meta);
+                    bubbleWrap.appendChild(bubble);
+                    container.appendChild(bubbleWrap);
+                });
+
+                container.scrollTop = container.scrollHeight;
+            })
+            .catch(err => {
+                container.innerHTML = '<div style="text-align: center; color: #e11d48; padding: 2rem;">Failed to load chat history.</div>';
+            });
+    }
+
+    function closeConversationModal() {
+        document.getElementById('chatTranscriptModal').style.display = 'none';
+    }
+    async function conversationAction(action, text = '') {
+        const feedback = document.getElementById('conversationActionFeedback');
+        const body = new URLSearchParams({action, text});
+        try {
+            const response = await fetch(`/conversations/${selectedConversationId}/action/`, {method:'POST',headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value},body});
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Could not update the conversation.');
+            feedback.textContent = data.message || (action === 'resume' ? 'Assistant resumed.' : 'Assistant paused.');
+            document.getElementById('staffReply').value = '';
+            openConversationModal(selectedConversationId);
+        } catch (error) { feedback.textContent = error.message; }
+    }
+    document.getElementById('resumeBotButton').addEventListener('click', () => conversationAction('resume'));
+    document.getElementById('claimChatButton').addEventListener('click', () => conversationAction('claim'));
+    document.getElementById('releaseChatButton').addEventListener('click', () => conversationAction('release'));
+    document.getElementById('pauseBotButton').addEventListener('click', () => conversationAction('pause'));
+    document.getElementById('testAIConnection').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        const message = document.getElementById('aiConnectionMessage');
+        message.textContent = 'Testing the configured AI provider…';
+        try {
+            const response = await fetch('/chatbot/connection/test/', {method:'POST', headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value}});
+            if (!response.ok) throw new Error('Connection test could not complete. Please retry.');
+            const data = await response.json();
+            document.getElementById('aiConnectionStatus').textContent = data.status;
+            message.textContent = data.message;
+            document.getElementById('aiConnectionChecked').textContent = data.checked_at ?
+                `Last provider result: ${new Date(data.checked_at).toLocaleString()} · ${data.latency_ms} ms` : 'No provider result recorded.';
+        } catch (error) { message.textContent = error.message; }
+        finally { button.disabled = false; }
+    });
+    document.getElementById('staffReplyForm').addEventListener('submit', event => {event.preventDefault();conversationAction('reply', document.getElementById('staffReply').value);});
+    document.addEventListener('keydown', event => {if(event.key === 'Escape'){closeConversationModal();closeTagModal();}});
+</script>
+{% endblock %}

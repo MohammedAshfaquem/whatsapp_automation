@@ -1,0 +1,27 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.2, pytest-9.2.0, pluggy-1.7.0
+django: version: 5.1.15, settings: config.settings (from ini)
+rootdir: C:\Users\Afi\Desktop\wtspAutamation
+configfile: pytest.ini
+plugins: anyio-4.15.1, django-4.14.0, mock-3.17.0
+collected 32 items
+
+tests\test_booking_fields.py ..........F                                 [ 34%]
+tests\test_booking_interpreter.py .                                      [ 37%]
+tests\test_ai_readiness.py .....                                         [ 53%]
+tests\test_handover_ownership.py ....                                    [ 65%]
+tests\test_booking_interpreter.py .........                              [ 93%]
+tests\test_dialogue_evaluation.py ..                                     [100%]
+
+================================== FAILURES ===================================
+__ test_known_price_question_keeps_database_price_even_if_model_invents_one ___
+tests\test_booking_fields.py:152: in test_known_price_question_keeps_database_price_even_if_model_invents_one
+    assert '999999' not in response['reply']
+E   AssertionError: assert '999999' not in 'The price is 999999.'
+E     
+E     '999999' is contained here:
+E       The price is 999999.
+E     ?              ++++++
+=========================== short test summary info ===========================
+FAILED tests/test_booking_fields.py::test_known_price_question_keeps_database_price_even_if_model_invents_one
+======================== 1 failed, 31 passed in 6.86s =========================

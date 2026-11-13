@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.2, pytest-9.2.0, pluggy-1.7.0
+django: version: 5.1.15, settings: config.settings (from ini)
+rootdir: C:\Users\Afi\Desktop\wtspAutamation
+configfile: pytest.ini
+plugins: anyio-4.15.1, django-4.14.0, mock-3.17.0
+collected 357 items
+
+tests\test_ac_problem_chat.py ..............                             [  3%]
+tests\test_ai_readiness.py .....                                         [  5%]
+tests\test_booking_fields.py ................                            [  9%]
+tests\test_booking_flow_publication.py ........                          [ 12%]
+tests\test_booking_flow_setup.py ...                                     [ 12%]
+tests\test_booking_followup_clarity.py ..........                        [ 15%]
+tests\test_booking_interpreter.py .                                      [ 15%]
+tests\test_booking_list_chat.py ................                         [ 20%]
+tests\test_booking_status_language.py .................                  [ 25%]
+tests\test_bookings_and_handover.py .........                            [ 27%]
+tests\test_business.py ..                                                [ 28%]
+tests\test_chat_transactions.py ..                                       [ 28%]
+tests\test_chatbot_and_bookings.py .....                                 [ 30%]
+tests\test_chatbot_phase2.py ..................                          [ 35%]
+tests\test_chatbot_routing.py .......                                    [ 37%]
+tests\test_conversation_memory.py .......                                [ 39%]
+tests\test_dashboard_and_rbac.py .........                               [ 41%]
+tests\test_enhancements.py ............................................. [ 54%]
+.......                                                                  [ 56%]
+tests\test_friend_booking.py ...............                             [ 60%]
+tests\test_handover_ownership.py ....                                    [ 61%]
+tests\test_image_messages.py ...............                             [ 65%]
+tests\test_knowledge_base.py ...                                         [ 66%]
+tests\test_natural_booking_chat.py ..............................        [ 75%]
+tests\test_rag_and_gemini.py ..........                                  [ 77%]
+tests\test_services.py ........                                          [ 80%]
+tests\test_swagger.py ..                                                 [ 80%]
+tests\test_whatsapp_booking_flows.py .........................           [ 87%]
+tests\test_whatsapp_integration.py ........                              [ 89%]
+tests\test_whatsapp_typing.py ...........                                [ 92%]
+tests\test_chat_transactions.py ..........                               [ 95%]
+tests\test_booking_interpreter.py .........                              [ 98%]
+tests\test_dialogue_evaluation.py ..                                     [ 98%]
+tests\test_settings_credentials.py ....                                  [100%]
+
+============================ 357 passed in 36.57s =============================

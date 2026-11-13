@@ -1,0 +1,56 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.2, pytest-9.2.0, pluggy-1.7.0
+django: version: 5.1.15, settings: config.settings (from ini)
+rootdir: C:\Users\Afi\Desktop\wtspAutamation
+configfile: pytest.ini
+plugins: anyio-4.15.1, django-4.14.0, mock-3.17.0
+collected 59 items
+
+tests\test_booking_fields.py ........                                    [ 13%]
+tests\test_friend_booking.py ...............                             [ 38%]
+tests\test_natural_booking_chat.py ...........................           [ 84%]
+tests\test_ai_readiness.py ....                                          [ 91%]
+tests\test_booking_interpreter.py ...F.                                  [100%]
+
+================================== FAILURES ===================================
+_____ test_interpreter_requests_structured_output_with_the_booking_policy _____
+apps\chatbot\gemini_service.py:83: in generate_reply
+    record_ai_status('READY' if reply else 'EMPTY_RESPONSE', int((monotonic() - started) * 1000))
+apps\chatbot\ai_status.py:25: in record_ai_status
+    AIConnectionStatus.objects.update_or_create(provider='gemini', defaults={
+.venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\db\models\query.py:985: in update_or_create
+    with transaction.atomic(using=self.db):
+.venv\Lib\site-packages\django\db\transaction.py:198: in __enter__
+    if not connection.get_autocommit():
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\db\backends\base\base.py:453: in get_autocommit
+    self.ensure_connection()
+E   RuntimeError: Database access not allowed, use the "django_db" mark, or the "db" or "transactional_db" fixtures to enable it.
+
+During handling of the above exception, another exception occurred:
+tests\test_booking_interpreter.py:21: in test_interpreter_requests_structured_output_with_the_booking_policy
+    result = GeminiChatService.interpret_booking_turn('The current draft and prior summary')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\chatbot\gemini_service.py:110: in interpret_booking_turn
+    raw = cls.generate_reply(prompt, system_instruction=SYSTEM_INSTRUCTION + BOOKING_TURN_INSTRUCTION,
+apps\chatbot\gemini_service.py:88: in generate_reply
+    record_ai_status(classify_provider_error(error), int((monotonic() - started) * 1000))
+apps\chatbot\ai_status.py:25: in record_ai_status
+    AIConnectionStatus.objects.update_or_create(provider='gemini', defaults={
+.venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\db\models\query.py:985: in update_or_create
+    with transaction.atomic(using=self.db):
+.venv\Lib\site-packages\django\db\transaction.py:198: in __enter__
+    if not connection.get_autocommit():
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\django\db\backends\base\base.py:453: in get_autocommit
+    self.ensure_connection()
+E   RuntimeError: Database access not allowed, use the "django_db" mark, or the "db" or "transactional_db" fixtures to enable it.
+=========================== short test summary info ===========================
+FAILED tests/test_booking_interpreter.py::test_interpreter_requests_structured_output_with_the_booking_policy
+======================== 1 failed, 58 passed in 9.44s =========================

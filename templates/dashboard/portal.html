@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block page_title %}Service desk{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'portal.css' %}">{% endblock %}
+{% block content %}
+<div class="workspace-intro" id="portal-overview"><div><div class="eyebrow">A comfortable home starts here</div><h2>Hello, {{ customer.name|default:user.first_name|default:"there" }}.</h2><p>Explore your services, arrange a visit, or pick up where you left off.</p></div><a href="#portal-bookings" class="btn-secondary">My bookings <span aria-hidden="true">↗</span></a></div>
+<div class="service-workspace">
+    <section class="service-catalog" id="portal-services" aria-label="Available services">
+        <div class="section-heading"><div><h3>Your home, in good hands.</h3><p>Choose a service to see details or arrange a visit.</p></div><span class="catalog-count">{{ tagged_services|length }} services</span></div>
+        <label class="catalog-search"><span aria-hidden="true">⌕</span><input id="serviceSearch" type="search" placeholder="Find a service…" aria-label="Find a service"></label>
+        <div class="service-grid">
+        {% for service in tagged_services %}
+            <article class="service-tile" data-service="{{ service.id }}" data-name="{{ service.name }}">
+                <div class="service-tile-top"><span class="service-symbol" aria-hidden="true">{% if 'gas' in service.name|lower %}◉{% elif 'install' in service.name|lower %}⌑{% elif 'repair' in service.name|lower %}⚒{% else %}✳{% endif %}</span><span class="service-category">{{ service.category }}</span></div>
+                <h4>{{ service.name }}</h4><p class="service-description">{{ service.description|default:"Get help from our service team. We'll confirm the details before your visit." }}</p>
+                <div class="service-price-line"><strong>{{ service.formatted_price }}</strong>{% if service.estimated_duration %}<span>◷ {{ service.estimated_duration }}</span>{% endif %}</div>
+                <button class="service-action" type="button" data-action="service_{{ service.id }}" data-title="{{ service.name }}">Explore service <span aria-hidden="true">↗</span></button>
+                {% if service.contact_number %}<a class="service-contact" href="tel:{{ service.contact_number }}">{{ service.contact_number }}</a>{% endif %}
+            </article>
+        {% empty %}<div class="empty-state">Our team is updating the service menu. You can still message us for help.</div>{% endfor %}
+        </div><p id="noServiceResults" class="empty-state" hidden>No services match your search.</p>
+        <div class="help-note"><span class="help-symbol">?</span><div><strong>Not sure what your AC needs?</strong><p>Describe the problem in chat. Our team can help you find the next step.</p></div><button type="button" data-action="talk to agent" data-title="Talk to the team" aria-label="Talk to the service team">↗</button></div>
+        <section class="portal-bookings" id="portal-bookings"><div class="section-heading"><div><h3>Your bookings</h3><p>Requests and updates, all in one place.</p></div><button class="text-action" type="button" data-action="booking status" data-title="Check my bookings">Check status ↗</button></div>
+            {% for booking in bookings %}<div class="booking-item"><div class="booking-icon" aria-hidden="true">▤</div><div><strong>{{ booking.service.name|default:"Service visit" }}</strong><p>{% if booking.recipient_name %}For {{ booking.recipient_name }} · {% endif %}#{{ booking.id }} · {{ booking.preferred_date|date:"d M Y"|default:"Scheduling pending" }}{% if booking.preferred_time_slot %} · {{ booking.preferred_time_slot }}{% endif %}</p></div><span class="booking-state state-{{ booking.status|lower }}">{{ booking.get_status_display }}</span></div>{% empty %}<div class="booking-empty"><span aria-hidden="true">▤</span><p>No visits arranged yet.<br><small>Your next booking will appear here.</small></p><button type="button" class="text-action" data-action="book" data-title="Book a visit">Arrange a visit ↗</button></div>{% endfor %}
+        </section>
+    </section>
+    <section class="service-chat" aria-label="Service conversation" id="serviceChat">
+        <header class="chat-header"><div class="assistant-avatar" aria-hidden="true">✳</div><div><h3>{{ business.shop_name|default:"Service assistant" }}</h3><p id="chatStatus">Automated service assistant · Team support available</p></div><button type="button" id="chatMenu" title="Main menu" aria-label="Main menu">⋯</button></header>
+        <div class="chat-progress" id="bookingProgress" hidden><div><span id="progressLabel">Arrange your visit</span><span id="progressCount"></span></div><div class="progress-track"><span id="progressFill"></span></div></div>
+        <div class="chat-stream" id="chatStream" role="log" aria-live="polite" aria-relevant="additions"><div class="chat-date">Today</div><div class="chat-welcome"><span class="welcome-symbol" aria-hidden="true">✳</span><h3>A little help, right here.</h3><p>Ask about a service or arrange your next visit.<br>Choose an option below to get started.</p></div></div>
+        <div class="booking-tools" id="bookingTools" hidden>
+            <form id="acDetailsForm" hidden><div class="tool-heading">Tell us about your AC</div><div class="tool-fields"><label>AC type<select id="acType"><option>Split AC</option><option>Window AC</option><option>Inverter AC</option><option>Cassette AC</option><option>Other AC</option></select></label><label>The problem<input id="acProblem" placeholder="e.g. Not cooling" minlength="5" maxlength="1000" required></label></div><button type="submit">Continue <span aria-hidden="true">→</span></button></form>
+            <form id="scheduleForm" hidden><div class="tool-heading">Choose your preferred visit</div><div class="tool-fields"><label>Date<input id="visitDate" type="date" required></label><label>Time<input id="visitTime" type="time" required></label></div><button type="submit">Review request <span aria-hidden="true">→</span></button><p>Our team will confirm availability.</p></form>
+        </div>
+        <div class="chat-error" id="chatError" role="alert" hidden><span id="errorText"></span><button id="retrySend" type="button">Try again</button></div>
+        <div class="chat-composer"><div class="suggestion-row" id="suggestions"><button type="button" data-action="view_services" data-title="View services">View services</button><button type="button" data-action="book" data-title="Book a visit">Book a visit</button><button type="button" data-action="talk to agent" data-title="Talk to the team">Talk to team</button></div><form id="chatForm"><label class="sr-only" for="chatInput">Your message</label><textarea id="chatInput" placeholder="Tell us how we can help…" rows="1" maxlength="2000"></textarea><button type="submit" id="sendButton" aria-label="Send message">↑</button>{% csrf_token %}</form><p class="composer-note" id="composerNote">Appointment requests are confirmed by our team.</p></div>
+    </section>
+</div>
+{{ chat_history|json_script:"chatHistory" }}
+{% endblock %}
+{% block extra_js %}<script src="{% static 'portal.js' %}" defer></script>{% endblock %}
