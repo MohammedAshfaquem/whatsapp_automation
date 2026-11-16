@@ -1,5 +1,8 @@
 # AI-Powered WhatsApp Automation System for AC Service Shop
 
+Production deployment and operational checks: [Production guide](docs/PRODUCTION.md).
+For the complete frontend, API and PostgreSQL stack on AWS, use the [Lightsail guide](docs/LIGHTSAIL.md).
+
 ## Updated local workflow
 
 Use the new Python 3.12 environment (`.venv`); the older `venv` points to a missing Python installation.
@@ -130,7 +133,7 @@ python manage.py seed_data
 ```powershell
 python manage.py createsuperuser
 ```
-*(A default admin user is pre-created in dev: `username: admin`, `password: adminpassword123`)*
+Create a unique administrator account for each deployment. Do not deploy development accounts or databases.
 
 ---
 

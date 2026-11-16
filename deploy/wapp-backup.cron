@@ -1,0 +1,2 @@
+# Daily at 02:30 UTC (08:00 India time) on the default Ubuntu server timezone.
+30 2 * * * ubuntu /usr/bin/python3 /opt/wapp/deploy/lightsail.py backup >> /opt/wapp/backup.log 2>&1

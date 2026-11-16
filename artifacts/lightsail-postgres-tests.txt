@@ -1,0 +1,52 @@
+ Container wapp-verification-db-1 Running 
+ Container wapp-verification-db-1 Waiting 
+ Container wapp-verification-db-1 Healthy 
+ Container wapp-verification-web-run-c3dc52992fb8 Creating 
+ Container wapp-verification-web-run-c3dc52992fb8 Created 
+============================= test session starts ==============================
+platform linux -- Python 3.12.16, pytest-9.2.0, pluggy-1.7.0
+django: version: 5.2.19, settings: config.settings (from ini)
+rootdir: /app
+configfile: pytest.ini
+plugins: anyio-4.16.0, mock-3.17.0, django-4.14.0
+collected 373 items
+
+tests/test_ac_problem_chat.py ..............                             [  3%]
+tests/test_ai_readiness.py .....                                         [  5%]
+tests/test_booking_fields.py ................                            [  9%]
+tests/test_booking_flow_publication.py ........                          [ 11%]
+tests/test_booking_flow_setup.py ...                                     [ 12%]
+tests/test_booking_followup_clarity.py ..........                        [ 15%]
+tests/test_booking_interpreter.py .                                      [ 15%]
+tests/test_booking_list_chat.py ................                         [ 19%]
+tests/test_booking_status_language.py .................                  [ 24%]
+tests/test_bookings_and_handover.py .........                            [ 26%]
+tests/test_business.py ..                                                [ 27%]
+tests/test_chat_transactions.py ..                                       [ 27%]
+tests/test_chatbot_and_bookings.py .....                                 [ 28%]
+tests/test_chatbot_phase2.py ..................                          [ 33%]
+tests/test_chatbot_routing.py .......                                    [ 35%]
+tests/test_conversation_memory.py .......                                [ 37%]
+tests/test_dashboard_and_rbac.py .........                               [ 39%]
+tests/test_enhancements.py ............................................. [ 52%]
+.......                                                                  [ 53%]
+tests/test_friend_booking.py ...............                             [ 57%]
+tests/test_handover_ownership.py ....                                    [ 58%]
+tests/test_image_messages.py ...............                             [ 63%]
+tests/test_knowledge_base.py ...                                         [ 63%]
+tests/test_natural_booking_chat.py ..............................        [ 71%]
+tests/test_production.py .                                               [ 72%]
+tests/test_rag_and_gemini.py ..........                                  [ 74%]
+tests/test_services.py ........                                          [ 76%]
+tests/test_swagger.py ..                                                 [ 77%]
+tests/test_whatsapp_booking_flows.py .........................           [ 84%]
+tests/test_whatsapp_integration.py ........                              [ 86%]
+tests/test_whatsapp_typing.py ...........                                [ 89%]
+tests/test_chat_transactions.py ..........                               [ 91%]
+tests/test_booking_interpreter.py .........                              [ 94%]
+tests/test_dialogue_evaluation.py ..                                     [ 94%]
+tests/test_lightsail_deployment.py .......                               [ 96%]
+tests/test_production.py ........                                        [ 98%]
+tests/test_settings_credentials.py ....                                  [100%]
+
+======================== 373 passed in 76.92s (0:01:16) ========================

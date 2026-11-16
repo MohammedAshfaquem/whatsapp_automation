@@ -21,6 +21,8 @@ def test_local_debug_key_precedence_preserves_production_environment(tmp_path, m
         values += f'GEMINI_API_KEY={file_key}\n'
     (tmp_path / '.env').write_text(values, encoding='utf-8')
     monkeypatch.setenv('DJANGO_DEBUG', debug)
+    monkeypatch.setenv('DJANGO_SECRET_KEY', 'test-only-production-secret-' * 3)
+    monkeypatch.setenv('DJANGO_ALLOWED_HOSTS', 'service.example.com')
     monkeypatch.setenv('GEMINI_API_KEY', 'deployment-key')
     monkeypatch.setenv('GEMINI_CHAT_MODEL', 'deployment-model')
     namespace = runpy.run_path(str(target))

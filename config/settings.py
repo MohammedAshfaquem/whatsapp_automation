@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from dotenv import dotenv_values, load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,27 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.dev',
     'https://*.ngrok.io',
 ]
+CSRF_TRUSTED_ORIGINS = ([origin.strip() for origin in os.getenv(
+    'DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()]
+    + (CSRF_TRUSTED_ORIGINS if DEBUG else []))
+
+if not DEBUG:
+    if len(SECRET_KEY) < 50 or SECRET_KEY.startswith('django-insecure-') or len(set(SECRET_KEY)) < 5:
+        raise ImproperlyConfigured('Production requires a strong DJANGO_SECRET_KEY (at least 50 characters).')
+    if not os.getenv('DJANGO_ALLOWED_HOSTS') or not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS:
+        raise ImproperlyConfigured('Production requires explicit DJANGO_ALLOWED_HOSTS without a wildcard.')
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG and os.getenv('DJANGO_HSTS_INCLUDE_SUBDOMAINS', 'False').lower() in ('true', '1', 'yes')
+SECURE_HSTS_PRELOAD = not DEBUG and os.getenv('DJANGO_HSTS_PRELOAD', 'False').lower() in ('true', '1', 'yes')
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+# Enable only behind a proxy which strips incoming forwarded headers.
+if os.getenv('DJANGO_TRUST_PROXY_HEADERS', 'False').lower() in ('true', '1', 'yes'):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -65,6 +87,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -137,6 +160,19 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'standard': {'format': '{asctime} {levelname} {name} {message}', 'style': '{'}},
+    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'standard'}},
+    'root': {'handlers': ['console'], 'level': 'INFO'},
+    'loggers': {'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False}},
+}
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'

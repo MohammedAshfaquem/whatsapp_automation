@@ -16,6 +16,7 @@ db.sqlite3
 db.sqlite3-journal
 .preview*
 .backups/
+.deployment-secrets/
 media/
 staticfiles/
 
@@ -24,6 +25,8 @@ chroma_data/
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Testing & Coverage
 .pytest_cache/

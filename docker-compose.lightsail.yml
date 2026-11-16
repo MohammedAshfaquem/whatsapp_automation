@@ -1,0 +1,93 @@
+name: wapp
+
+x-app: &app
+  image: wapp-app:local
+  env_file: .env.lightsail
+  environment:
+    DJANGO_DEBUG: "False"
+    DJANGO_ALLOWED_HOSTS: ${APP_DOMAIN:?Run deploy/lightsail.py init first}
+    DJANGO_CSRF_TRUSTED_ORIGINS: https://${APP_DOMAIN}
+    DJANGO_TRUST_PROXY_HEADERS: "True"
+    DATABASE_URL: postgresql://wapp:${POSTGRES_PASSWORD:?Database password required}@db:5432/wapp
+    CHROMA_PERSIST_DIRECTORY: /app/chroma_data
+  volumes:
+    - knowledge:/app/chroma_data
+  depends_on:
+    db:
+      condition: service_healthy
+  init: true
+  restart: unless-stopped
+  stop_grace_period: 180s
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wapp
+      POSTGRES_DB: wapp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wapp -d wapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    <<: *app
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os,urllib.request; r=urllib.request.Request('http://127.0.0.1:8000/health/', headers={'Host':os.environ['DJANGO_ALLOWED_HOSTS'],'X-Forwarded-Proto':'https'}); urllib.request.urlopen(r,timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  retry:
+    <<: *app
+    command: ["python", "-m", "config.retry_worker"]
+
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Domain required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres:
+  knowledge:
+  certificates:
+  caddy_config:

@@ -148,7 +148,7 @@ class TestWhatsAppInboundMessageProcessing:
                             "interactive": {
                                 "type": "button_reply",
                                 "button_reply": {
-                                    "id": "check_price_1",
+                                    "id": f"check_price_{Service.objects.get(name='AC general servicing').pk}",
                                     "title": "Check Price"
                                 }
                             }

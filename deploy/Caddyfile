@@ -1,0 +1,11 @@
+{$APP_DOMAIN} {
+	request_body {
+		max_size 3MB
+	}
+	reverse_proxy web:8000 {
+		header_up X-Forwarded-Proto {scheme}
+		transport http {
+			response_header_timeout 180s
+		}
+	}
+}

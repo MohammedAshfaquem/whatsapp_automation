@@ -1,6 +1,7 @@
 """URL Configuration for ac_whatsapp_agent."""
 from django.contrib import admin
 from django.urls import path, include
+from .health import health_check
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
@@ -8,6 +9,7 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
+    path('health/', health_check, name='health'),
     path('admin/', admin.site.urls),
 
     # Swagger / OpenAPI Documentation
