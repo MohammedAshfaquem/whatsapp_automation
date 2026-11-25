@@ -43,7 +43,7 @@ def next_missing_step(data):
 def apply_booking_fields(session, interpretation):
     """Apply explicit updates only. Never submit a booking or trust model action IDs."""
     from .booking_service import BookingService
-    session = BookingSession.objects.select_for_update().select_related('conversation__customer').get(pk=session.pk)
+    session = BookingSession.objects.select_for_update(of=('self',)).select_related('conversation__customer').get(pk=session.pk)
     data = dict(session.data)
     fields = interpretation.get('fields', {})
     errors = []

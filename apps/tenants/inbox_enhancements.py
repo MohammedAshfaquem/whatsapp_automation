@@ -107,7 +107,7 @@ def chat_media_reply_api(request, conversation_id):
 
     origin = get_object_or_404(Conversation.objects.only('id', 'customer_id', 'tenant_id'), pk=conversation_id, tenant=tenant)
     Customer.objects.select_for_update().get(pk=origin.customer_id)
-    conversation = get_object_or_404(Conversation.objects.select_for_update().select_related('customer'), pk=conversation_id, tenant=tenant)
+    conversation = get_object_or_404(Conversation.objects.select_for_update(of=('self',)).select_related('customer'), pk=conversation_id, tenant=tenant)
 
     if conversation.status != ConversationStatus.HUMAN_HANDOVER:
         return JsonResponse({'error': 'Switch to Human mode before sending media attachments.'}, status=409)
@@ -231,7 +231,7 @@ def chat_transfer_api(request, conversation_id):
 
     origin = get_object_or_404(Conversation.objects.only('id', 'customer_id', 'tenant_id'), pk=conversation_id, tenant=tenant)
     Customer.objects.select_for_update().get(pk=origin.customer_id)
-    conversation = get_object_or_404(Conversation.objects.select_for_update().select_related('customer', 'assigned_staff'), pk=conversation_id, tenant=tenant)
+    conversation = get_object_or_404(Conversation.objects.select_for_update(of=('self',)).select_related('customer', 'assigned_staff'), pk=conversation_id, tenant=tenant)
 
     data = _parse_body(request)
     target_user_id = data.get('target_user_id')

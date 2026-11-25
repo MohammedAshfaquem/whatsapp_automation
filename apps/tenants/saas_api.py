@@ -233,7 +233,7 @@ def platform_tools(request, resource):
                 if action=='send_reminder':
                     with transaction.atomic():
                         tenant=Tenant.objects.select_for_update().get(pk=int(data['tenant_id']))
-                        sub=TenantSubscription.objects.select_for_update().select_related('effective_plan').get(tenant=tenant)
+                        sub=TenantSubscription.objects.select_for_update(of=('self',)).select_related('effective_plan').get(tenant=tenant)
                         owner_m=TenantMembership.objects.filter(tenant=tenant,role='OWNER',is_active=True).select_related('user').first()
                         recipient=(tenant.contact_email or (owner_m.user.email if owner_m else '') or '').strip()
                         if not recipient or '@' not in recipient or recipient.endswith('.local'):

@@ -1369,7 +1369,7 @@ def update_tenant_staff_member(
     ip_addr = get_client_ip(request)
     with transaction.atomic():
         target = (
-            TenantMembership.objects.select_for_update()
+            TenantMembership.objects.select_for_update(of=('self',))
             .select_related('user')
             .filter(pk=membership_id, tenant=tenant)
             .first()
@@ -1480,7 +1480,7 @@ def reset_tenant_staff_password(
 
     with transaction.atomic():
         target = (
-            TenantMembership.objects.select_for_update()
+            TenantMembership.objects.select_for_update(of=('self',))
             .select_related('user')
             .filter(pk=membership_id, tenant=tenant)
             .first()
