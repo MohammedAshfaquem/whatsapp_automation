@@ -85,27 +85,57 @@ def handle_active_booking(message, conversation, intent, entity, interpretation=
     recipient = BookingService.recipient_correction(message)
     if recipient:
         return ChatReply(BookingService.set_recipient(session, recipient), offer_booking_form=True)
+    from apps.business.models import Product
+    if not entity and session.data.get('product_id'):
+        is_question = '?' in message or bool(re.search(r'^\s*(?:can|could|would|will|does|do|is|how|what|why)\b', message.strip(), re.I))
+        if is_question:
+            scoped_prod = Product.objects.filter(pk=session.data['product_id'], is_active=True).first()
+            if scoped_prod:
+                kind, target_obj = IntentService.find_product_capability_or_integration(scoped_prod, message.lower())
+                if kind == 'capability':
+                    intent = IntentType.PRODUCT_CAPABILITY
+                    entity = (scoped_prod, target_obj)
+                elif kind == 'integration':
+                    intent = IntentType.PRODUCT_INTEGRATION
+                    entity = (scoped_prod, target_obj)
+    explicit_product = (intent in (IntentType.BOOKING_START, IntentType.SERVICE_SELECT)
+                        and isinstance(entity, Product))
     explicit_service = (intent in (IntentType.BOOKING_START, IntentType.SERVICE_SELECT)
                         and isinstance(entity, Service))
     side_question = intent in (IntentType.SERVICE_PRICE, IntentType.WORKING_HOURS, IntentType.SERVICE_AREAS,
         IntentType.SHOP_LOCATION, IntentType.PAYMENT_METHODS, IntentType.WARRANTY_POLICY,
-        IntentType.FAQ_MATCH, IntentType.BOOKING_STATUS, IntentType.DISCOUNT_ENQUIRY)
+        IntentType.FAQ_MATCH, IntentType.BOOKING_STATUS, IntentType.DISCOUNT_ENQUIRY,
+        IntentType.PRODUCT_PRICING, IntentType.PRODUCT_CAPABILITY, IntentType.PRODUCT_INTEGRATION,
+        IntentType.PRODUCT_ENQUIRY, IntentType.PRODUCT_VS_SERVICE, IntentType.IDENTITY)
+    if session.step == BookingStep.AC_DETAILS and intent in (IntentType.PRODUCT_CAPABILITY, IntentType.PRODUCT_INTEGRATION):
+        is_question = '?' in message or bool(re.search(r'^\s*(?:can|could|would|will|does|do|is|how|what|why)\b', message.strip(), re.I))
+        if not is_question:
+            side_question = False
     side_question = side_question or (intent == IntentType.SERVICE_LIST and session.step != BookingStep.SERVICE)
     side_question = side_question or (intent == IntentType.AC_PROBLEM and session.step != BookingStep.AC_DETAILS)
-    if session.step == BookingStep.AC_DETAILS and intent == IntentType.SERVICE_PRICE:
+    if session.step == BookingStep.AC_DETAILS and intent in (IntentType.SERVICE_PRICE, IntentType.PRODUCT_PRICING):
         side_question = any(re.search(pattern, message, re.I) for pattern in IntentService.PRICE_PATTERNS)
     if IntentService.is_simple_greeting(message):
         reply_text, options = welcome_back(conversation)
     elif message.lower() in ('booking_resume', 'continue booking', 'resume booking'):
         reply_text = BookingService.review(session) if session.step == BookingStep.REVIEW else BookingService.prompt(session)
+    elif explicit_product:
+        session.data.update(product_id=entity.pk, product_name=entity.name, request_type='product_demo',
+                            ac_type=f"{entity.name} Demo")
+        if session.step == BookingStep.SERVICE:
+            session.step = BookingStep.AC_DETAILS
+        session.save()
+        reply_text = f'*{entity.name} Demo*\n\n' + (BookingService.review(session) if session.step == BookingStep.REVIEW else BookingService.prompt(session))
     elif explicit_service:
-        session.data.update(service_id=entity.pk, service_name=entity.name)
+        session.data.update(service_id=entity.pk, service_name=entity.name, request_type='consultation',
+                            ac_type=entity.name)
         if session.step == BookingStep.SERVICE:
             session.step = BookingStep.AC_DETAILS
         session.save()
         conversation.service = entity
         conversation.save(update_fields=['service'])
         reply_text = f'*{entity.name}*\n\n' + (BookingService.review(session) if session.step == BookingStep.REVIEW else BookingService.prompt(session))
+
     elif (session.step == BookingStep.SCHEDULE and BookingService.is_schedule_answer(message)
             and (not side_question or intent == IntentType.WORKING_HOURS)):
         reply_text, booking_id = BookingService.process_booking_step(conversation, message)

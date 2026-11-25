@@ -1,0 +1,352 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Neoriz WhatsApp Automation — Multi-Agent WhatsApp CRM & AI Workspace{% endblock %}</title>
+    <meta name="description" content="{% block meta_desc %}Manage WhatsApp conversations, qualify leads, and organize your sales team in one workspace. Built by Neoriz Solutions on the official Meta WhatsApp Business Cloud API.{% endblock %}">
+    
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'logo-192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand-green: #11b76d;
+            --brand-dark: #0e9a5b;
+            --brand-light: #e8f8f0;
+            --brand-accent: #10c875;
+            --forest-bg: #0d231b;
+            --text-heading: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --border-card: #e2e8f0;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 12px 28px rgba(17, 183, 109, 0.12);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--brand-green); text-decoration: none; transition: all 0.2s; }
+        a:hover { color: var(--brand-dark); }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Top Navigation Header */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-card);
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 72px;
+        }
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-heading);
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: -0.02em;
+        }
+        .brand-logo-img {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            object-fit: contain;
+            box-shadow: 0 2px 8px rgba(17, 183, 109, 0.3);
+        }
+        .brand-text span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: block;
+            margin-top: -3px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-link {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-body);
+        }
+        .nav-link:hover { color: var(--brand-green); }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: var(--brand-green);
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(17, 183, 109, 0.28);
+        }
+        .btn-primary:hover {
+            background-color: var(--brand-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(17, 183, 109, 0.38);
+        }
+        .btn-secondary {
+            background: #ffffff;
+            color: var(--text-heading) !important;
+            border-color: var(--border-card);
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        .btn-outline {
+            border-color: var(--brand-green);
+            color: var(--brand-green) !important;
+            background: transparent;
+        }
+        .btn-outline:hover {
+            background: var(--brand-light);
+        }
+
+        /* Banner Messages */
+        .messages-wrapper {
+            margin: 1rem auto;
+            max-width: 1200px;
+            padding: 0 1.5rem;
+        }
+        .alert {
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .alert-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+        .alert-error { background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; }
+        .alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+
+        /* Footer */
+        .site-footer {
+            background: var(--forest-bg);
+            color: #ffffff;
+            padding: 4.5rem 0 2rem;
+            margin-top: 5rem;
+            border-top: 4px solid var(--brand-green);
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3.5rem;
+        }
+        .footer-brand h3 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+        .footer-brand p {
+            color: #94a3b8;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+        }
+        .footer-heading {
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .footer-links a {
+            color: #94a3b8;
+            font-size: 0.88rem;
+        }
+        .footer-links a:hover {
+            color: #ffffff;
+        }
+        .footer-bottom {
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #64748b;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-meta-note {
+            font-size: 0.78rem;
+            color: #64748b;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        /* Responsive Mobile Menu */
+        @media (max-width: 900px) {
+            .nav-links { display: none; }
+            .footer-grid { grid-template-columns: 1fr; gap: 2rem; }
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+{% include 'tenants/light_theme.html' %}</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="brand-link" aria-label="Neoriz WhatsApp Automation home">
+                <img src="{% static 'logo.png' %}" alt="Neoriz Mascot Logo" class="brand-logo-img">
+                <div class="brand-text">
+                    Neoriz
+                    <span>WhatsApp Automation</span>
+                </div>
+            </a>
+
+            <nav aria-label="Marketing Navigation">
+                <ul class="nav-links">
+                    <li><a href="{% url 'marketing-features' %}" class="nav-link">Features</a></li>
+                    <li><a href="{% url 'marketing-pricing' %}" class="nav-link">Pricing</a></li>
+                    <li><a href="{% url 'marketing-book-demo' %}" class="nav-link">Book Demo</a></li>
+                </ul>
+            </nav>
+
+            <div class="nav-actions">
+                {% if user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-primary">Workspace Dashboard &rarr;</a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-secondary">Sign In</a>
+                <a href="{% url 'request-access' %}" class="btn btn-primary">Request Access</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="messages-wrapper">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" style="background:transparent;border:none;cursor:pointer;font-size:1.1rem;color:inherit;">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <h3>Neoriz WhatsApp Automation</h3>
+                    <p>WhatsApp CRM, shared team inbox, and conversational AI tools by Neoriz Solutions. Availability depends on your workspace plan and completed integration setup.</p>
+                    <div style="font-size: 0.85rem; color: #94a3b8;">
+                        Company: <strong>Neoriz Solutions</strong><br>
+                        Website: <a href="https://neorizsolutions.com" target="_blank" rel="noopener" style="color: #11b76d;">neorizsolutions.com</a>
+                    </div>
+                    <div class="footer-meta-note">
+                        * Built on the official Meta WhatsApp Business Cloud API. Standard Meta conversation fees apply according to Meta's published pricing.
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="footer-heading">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'marketing-features' %}">Core Features</a></li>
+                        <li><a href="{% url 'marketing-pricing' %}">Plans & Pricing</a></li>
+                        <li><a href="{% url 'marketing-book-demo' %}">Book a Demo</a></li>
+                        <li><a href="{% url 'request-access' %}">Request Access</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-heading">Access</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'login' %}">Workspace Login</a></li>
+                        <li><a href="/login/?next=/app/platform/dashboard">Super Admin Sign In</a></li>
+                        <li><a href="/health/">API Health Check</a></li>
+                        <li><a href="/swagger/">OpenAPI Reference</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="footer-heading">Legal & Compliance</h4>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'marketing-terms' %}">Terms of Service</a></li>
+                        <li><a href="{% url 'marketing-privacy' %}">Privacy Policy</a></li>
+                        <li><a href="{% url 'marketing-pricing' %}#meta-fees">Meta Rate Card Note</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>&copy; 2026 Neoriz Solutions. All rights reserved.</div>
+                <div>Neoriz WhatsApp Automation SaaS Platform</div>
+            </div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+{% include 'tenants/password_visibility.html' %}</body>
+</html>

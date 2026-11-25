@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.tenants.admin import TenantScopedAdminMixin
 from .models import Customer, Conversation, Message
 
 class MessageInline(admin.TabularInline):
@@ -8,13 +9,14 @@ class MessageInline(admin.TabularInline):
     can_delete = False
 
 @admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('phone_number', 'name', 'created_at', 'updated_at')
-    search_fields = ('phone_number', 'name')
+class CustomerAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
+    list_display = ('phone_number', 'name', 'company', 'email', 'owner', 'lifecycle_status', 'source', 'last_contacted_at', 'updated_at')
+    list_filter = ('tenant', 'lifecycle_status', 'source', 'owner', 'created_at')
+    search_fields = ('phone_number', 'name', 'email', 'company__name')
     ordering = ('-updated_at',)
 
 @admin.register(Conversation)
-class ConversationAdmin(admin.ModelAdmin):
+class ConversationAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'customer', 'channel', 'status', 'assigned_staff', 'picked_up_at', 'last_message_at')
     list_filter = ('status', 'channel', 'created_at')
     search_fields = ('customer__phone_number', 'customer__name')
@@ -39,6 +41,13 @@ class MessageAdmin(admin.ModelAdmin):
     list_display = ('id', 'conversation', 'direction', 'sender_type', 'short_text', 'processing_status', 'created_at')
     list_filter = ('direction', 'sender_type', 'processing_status', 'created_at')
     search_fields = ('message_text', 'external_message_id', 'conversation__customer__phone_number')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        tenant = getattr(request, 'tenant', None)
+        return qs.filter(conversation__tenant=tenant) if tenant else qs.none()
 
     def short_text(self, obj):
         return obj.message_text[:60]

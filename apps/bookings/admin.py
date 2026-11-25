@@ -1,38 +1,49 @@
 from django.contrib import admin
+from apps.tenants.admin import TenantScopedAdminMixin
 from .models import Booking, BookingStatus
 from .notifications import change_booking_status
 
 @admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
+class BookingAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = (
         'id',
+        'request_type',
         'customer',
-        'recipient_name',
+        'product',
         'service',
-        'ac_type',
+        'organization',
         'preferred_date',
         'preferred_time_slot',
         'status',
         'created_at'
     )
-    list_filter = ('status', 'preferred_date', 'created_at', 'service')
+    list_filter = ('request_type', 'status', 'preferred_date', 'created_at', 'product', 'service')
     search_fields = (
         'customer__phone_number',
         'customer__name',
         'recipient_name',
+        'organization',
+        'contact_email',
         'service_address',
         'problem_description',
+        'requirements_summary',
         'owner_notes'
     )
     readonly_fields = ('status',)
     fieldsets = (
-        ('Customer & Service Details', {
-            'fields': ('customer', 'recipient_name', 'conversation', 'service', 'ac_type', 'ac_brand', 'problem_description')
+        ('Request Classification', {
+            'fields': ('request_type', 'customer', 'recipient_name', 'conversation', 'product', 'service')
         }),
-        ('Schedule & Location', {
+        ('Customer & Organization', {
+            'fields': ('organization', 'contact_email', 'language', 'account_reference')
+        }),
+        ('Requirements & Details', {
+            'fields': ('requirements_summary', 'staff_summary', 'problem_description', 'ac_type', 'ac_brand')
+        }),
+        ('Schedule & Contact Location', {
             'fields': ('service_address', 'preferred_date', 'preferred_time_slot')
         }),
-        ('Status & Owner Notes', {
+        ('Status & Staff Notes', {
             'fields': ('status', 'owner_notes')
         }),
     )

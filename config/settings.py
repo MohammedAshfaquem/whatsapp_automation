@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import dotenv_values, load_dotenv
 import dj_database_url
@@ -76,10 +77,13 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local apps
+    'apps.tenants',
+    'apps.marketing',
     'apps.business',
     'apps.services',
     'apps.knowledge_base',
     'apps.chatbot',
+    'apps.crm',
     'apps.bookings',
     'apps.whatsapp',
     'apps.dashboard',
@@ -93,6 +97,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.tenants.middleware.TenantMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -110,6 +115,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.tenants.navigation.navigation_context',
             ],
         },
     },
@@ -175,7 +181,7 @@ LOGGING = {
 }
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_REDIRECT_URL = '/app/'
 LOGOUT_REDIRECT_URL = 'login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -209,6 +215,7 @@ SPECTACULAR_SETTINGS = {
 
 # Business & AC Service settings
 DEFAULT_CURRENCY = os.getenv('DEFAULT_CURRENCY', 'INR')
+BUSINESS_INDUSTRY = os.getenv('BUSINESS_INDUSTRY', 'ac')
 
 # Gemini AI settings
 # Local key edits should take effect even when the IDE/terminal inherited an old key.
@@ -236,3 +243,19 @@ WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN', '')
 WHATSAPP_BOOKING_FLOW_ID = os.getenv('WHATSAPP_BOOKING_FLOW_ID', '')
 WHATSAPP_TYPING_INDICATOR_ENABLED = os.getenv('WHATSAPP_TYPING_INDICATOR_ENABLED', 'True').lower() in ('true', '1', 'yes')
 META_APP_SECRET = os.getenv('META_APP_SECRET', '')
+
+# Transactional Email Settings
+EMAIL_BACKEND = os.getenv('DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.locmem.EmailBackend' if (DEBUG or 'pytest' in sys.modules) else 'django.core.mail.backends.smtp.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Neoriz WhatsApp Automation <noreply@neorizsolutions.com>')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+CLIENT_MEDIA_S3_BUCKET = os.getenv('CLIENT_MEDIA_S3_BUCKET', '')
+CLIENT_MEDIA_S3_REGION = os.getenv('CLIENT_MEDIA_S3_REGION', os.getenv('AWS_REGION', 'ap-south-1'))
+CLIENT_MEDIA_S3_ENDPOINT_URL = os.getenv('CLIENT_MEDIA_S3_ENDPOINT_URL', '')
+META_APP_ID = os.getenv('META_APP_ID', '')
+
+# Password recovery links expire after one hour.
+PASSWORD_RESET_TIMEOUT = 3600

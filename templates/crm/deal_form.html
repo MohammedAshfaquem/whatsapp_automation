@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{% if is_new %}Create Deal{% else %}Edit Deal - {{ form.instance.title }}{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card" style="max-width: 850px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">{% if is_new %}Create Sales Deal{% else %}Edit Deal Details{% endif %}</h3>
+            <p class="card-subtitle">Track opportunities, value, pipeline stages, and service requirements</p>
+        </div>
+        <a href="{% url 'crm-deal-board' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">Cancel</a>
+    </div>
+
+    <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert-box alert-error">
+            <div>
+                <strong>Please correct the following errors:</strong>
+                <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                    {% for field, errors in form.errors.items %}
+                    <li>{{ field }}: {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Deal Title *</label>
+            {{ form.title }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Contact (Person) *</label>
+                {{ form.contact }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Company / Organization</label>
+                {{ form.company }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Pipeline *</label>
+                {{ form.pipeline }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Initial Stage *</label>
+                {{ form.stage }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Deal Amount</label>
+                {{ form.amount }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Currency</label>
+                {{ form.currency }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Probability (%)</label>
+                {{ form.probability }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Target Product</label>
+                {{ form.product }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Target Agency Service</label>
+                {{ form.service }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Expected Close Date</label>
+                {{ form.expected_close_date }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Deal Owner</label>
+                {{ form.owner }}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.75rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Customer Requirements / Scope Summary</label>
+            {{ form.requirements_summary }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 1.25rem;">
+            <a href="{% url 'crm-deal-board' %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Save Deal</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

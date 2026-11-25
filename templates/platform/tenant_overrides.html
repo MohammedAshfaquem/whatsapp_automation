@@ -1,0 +1,91 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Overrides: {{ tenant.name }} — Platform Administration{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <a href="{% url 'platform-tenants' %}" style="font-size: 0.85rem; color: var(--text-muted);">&larr; Back to Tenants</a>
+            <span style="color: var(--border-dark);">/</span>
+            <span class="badge badge-blue">{{ tenant.subscription.effective_plan.name|default:"Standard Plan" }}</span>
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-heading);">Capability Overrides: {{ tenant.name }}</h1>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Fine-tune granular feature access for this workspace. Precedence: <strong>DENY</strong> &gt; <strong>ALLOW</strong> &gt; <strong>INHERIT (Subscription Plan)</strong>.
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'platform-inspect-tenant' tenant.id %}" class="btn btn-secondary">
+            Inspect Workspace &rarr;
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_overrides">
+
+    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 1.5rem;">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Capability / Feature</th>
+                    <th style="width: 20%;">Required Module</th>
+                    <th style="width: 20%;">Override Policy</th>
+                    <th style="width: 15%;">Effective Status</th>
+                    <th style="width: 20%;">Audit Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in override_rows %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-heading);">{{ row.capability.name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">{{ row.capability.key }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">{{ row.capability.description }}</div>
+                    </td>
+                    <td>
+                        {% if row.capability.required_module %}
+                        <span class="badge badge-blue">{{ row.capability.required_module }}</span>
+                        {% else %}
+                        <span class="badge badge-gray">Core Feature</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select name="override_{{ row.capability.key }}" style="width: 100%; padding: 0.45rem 0.65rem; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 0.82rem; font-weight: 600;">
+                            <option value="INHERIT" {% if row.override == 'INHERIT' %}selected{% endif %}>INHERIT (From Plan)</option>
+                            <option value="ALLOW" {% if row.override == 'ALLOW' %}selected{% endif %}>ALLOW (Explicit Grant)</option>
+                            <option value="DENY" {% if row.override == 'DENY' %}selected{% endif %}>DENY (Explicit Block)</option>
+                        </select>
+                    </td>
+                    <td>
+                        {% if row.effective_allowed %}
+                        <span class="badge badge-green">✓ Allowed</span>
+                        {% else %}
+                        <span class="badge badge-red">✕ Blocked</span>
+                        {% endif %}
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px;">
+                            {{ row.reason }}
+                        </div>
+                    </td>
+                    <td>
+                        <input type="text" name="reason_{{ row.capability.key }}" 
+                               placeholder="Reason for change..." 
+                               value="{% if row.override != 'INHERIT' %}{{ row.reason }}{% endif %}"
+                               style="width: 100%; padding: 0.45rem 0.65rem; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 0.82rem;">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 1rem; align-items: center;">
+        <a href="{% url 'platform-tenants' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" style="padding: 0.65rem 1.5rem; font-weight: 700;">
+            Save Capability Overrides
+        </button>
+    </div>
+</form>
+{% endblock %}

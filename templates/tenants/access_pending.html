@@ -1,0 +1,51 @@
+{% extends 'marketing/base_marketing.html' %}
+
+{% block title %}Access Pending — Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<div style="min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem;">
+    <div style="max-width: 520px; width: 100%; background: #ffffff; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; padding: 2.5rem; text-align: center;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem auto;">
+            ⏳
+        </div>
+        
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Workspace Access Pending</h1>
+
+        {% if onboarding %}
+        <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
+            Registration for <strong>{{ onboarding.business_name }}</strong> ({{ onboarding.owner_email }}) is currently:
+            <strong>{{ onboarding.get_registration_status_display }}</strong>.
+        </p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; text-align: left; margin-bottom: 2rem; font-size: 0.88rem; color: #475569;">
+            <ul style="margin: 0; padding-left: 1.2rem; line-height: 1.7;">
+                <li>Email Verification: <strong>{% if onboarding.email_verified %}Verified{% else %}Pending{% endif %}</strong></li>
+                <li>Platform Approval: <strong>{{ onboarding.get_approval_status_display }}</strong></li>
+                <li>Owner Password Setup: <strong>{% if onboarding.password_set %}Completed{% else %}Pending{% endif %}</strong></li>
+            </ul>
+        </div>
+        {% else %}
+        <p style="font-size: 0.95rem; color: #64748b; line-height: 1.6; margin-bottom: 1.5rem;">
+            Hello <strong>{{ user.first_name|default:user.username }}</strong>! Your account has been authenticated, but you are not currently an active member of any tenant workspace.
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; text-align: left; margin-bottom: 2rem; font-size: 0.88rem; color: #475569;">
+            <p style="margin-bottom: 0.5rem;"><strong>Next Steps:</strong></p>
+            <ol style="margin-left: 1.25rem; line-height: 1.6;">
+                <li>If you were invited by an administrator, confirm your account setup link or check with your Workspace Owner.</li>
+                <li>If you want to register a new business workspace, register through our public portal.</li>
+                <li>If you require platform assistance, contact <a href="mailto:support@neorizsolutions.com" style="color: #11b76d; font-weight: 600;">support@neorizsolutions.com</a>.</li>
+            </ol>
+        </div>
+        {% endif %}
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="{% url 'signup' %}" class="btn-primary" style="display: block; padding: 0.8rem; border-radius: 10px; font-weight: 700; text-decoration: none; text-align: center;">
+                Create a New Business Workspace
+            </a>
+            <a href="{% url 'logout' %}" class="btn-secondary" style="display: block; padding: 0.8rem; border-radius: 10px; font-weight: 600; text-decoration: none; text-align: center;">
+                Sign out
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Deals Directory{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card">
+    <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 class="card-title">Deals & Opportunities</h3>
+            <p class="card-subtitle">{{ total_deals }} sales opportunities across all stages</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="{% url 'crm-deal-board' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">Kanban Board ☷</a>
+            <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">+ New Deal</a>
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 0.75rem 0.5rem;">Deal Title</th>
+                    <th style="padding: 0.75rem 0.5rem;">Contact / Customer</th>
+                    <th style="padding: 0.75rem 0.5rem;">Company</th>
+                    <th style="padding: 0.75rem 0.5rem;">Stage</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right;">Amount</th>
+                    <th style="padding: 0.75rem 0.5rem;">Expected Close</th>
+                    <th style="padding: 0.75rem 0.5rem;">Owner</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for deal in page_obj %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <a href="{% url 'crm-deal-detail' deal.id %}" style="font-weight: 700; color: #1e293b;">{{ deal.title }}</a>
+                        {% if deal.product %}
+                        <div style="font-size: 0.72rem; color: #11b76d;">Product: {{ deal.product.name }}</div>
+                        {% elif deal.service %}
+                        <div style="font-size: 0.72rem; color: #11b76d;">Service: {{ deal.service.name }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <a href="{% url 'crm-contact-detail' deal.contact.id %}" style="color: #475569; font-weight: 600;">
+                            {{ deal.contact.name|default:deal.contact.phone_number }}
+                        </a>
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        {% if deal.company %}
+                        <a href="{% url 'crm-company-detail' deal.company.id %}" style="color: #475569;">{{ deal.company.name }}</a>
+                        {% else %}
+                        <span style="color: #cbd5e1;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <span class="badge" style="
+                            padding: 3px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700;
+                            {% if deal.stage.is_won %}background: #dcfce7; color: #15803d;
+                            {% elif deal.stage.is_lost %}background: #fee2e2; color: #b91c1c;
+                            {% else %}background: #e8f8f0; color: #11b76d;{% endif %}">
+                            {{ deal.stage.name }}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 800; color: #0f172a;">
+                        {% if deal.amount %}
+                        {{ deal.currency }} {{ deal.amount|floatformat:2 }}
+                        {% else %}
+                        <span style="color: #94a3b8; font-size: 0.78rem;">Quotation</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; font-size: 0.8rem; color: #64748b;">
+                        {{ deal.expected_close_date|date:"d M Y"|default:"-" }}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; font-size: 0.8rem; color: #475569;">
+                        {% if deal.owner %}{{ deal.owner.get_full_name|default:deal.owner.username }}{% else %}Unassigned{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                        <a href="{% url 'crm-deal-detail' deal.id %}" style="font-weight: 600; font-size: 0.8rem; color: var(--primary);">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+        <span style="font-size: 0.82rem; color: #64748b;">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_deals }} deals</span>
+        <div style="display: flex; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Previous</a>
+            {% endif %}
+            <span style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 700;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+        <p style="font-size: 1rem; font-weight: 600; color: #64748b;">No deals created yet.</p>
+        <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="margin-top: 1rem;">+ Create Opportunity</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

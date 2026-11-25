@@ -4,7 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CoolBreeze AC Portal{% endblock %}</title>
+    <title>{% block title %}Neoriz WhatsApp Automation{% endblock %}</title>
+    <!-- Favicon & Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'logo-192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,12 +28,13 @@
             --border-light: #e6edf5;
             --border-subtle: rgba(226, 232, 240, 0.8);
             
-            --primary: #4338ca;
-            --primary-light: #e0e7ff;
-            --primary-accent: #6366f1;
+            --primary: #11b76d;
+            --primary-dark: #0e9a5b;
+            --primary-light: #e8f8f0;
+            --primary-accent: #10c875;
             
-            --emerald: #10b981;
-            --emerald-light: #ecfdf5;
+            --emerald: #11b76d;
+            --emerald-light: #e8f8f0;
             --emerald-bar: #86efac;
             
             --rose: #f43f5e;
@@ -105,14 +111,14 @@
             width: 46px;
             height: 46px;
             border-radius: 16px;
-            background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+            background: linear-gradient(135deg, #11b76d 0%, #10c875 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 1.35rem;
             margin-bottom: 2.5rem;
-            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 6px 16px rgba(17, 183, 109, 0.3);
             cursor: pointer;
         }
 
@@ -147,9 +153,9 @@
         }
 
         .nav-icon-btn.active {
-            background: #4338ca;
+            background: #11b76d;
             color: #ffffff;
-            box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35);
+            box-shadow: 0 6px 16px rgba(17, 183, 109, 0.35);
         }
 
         .sidebar-footer {
@@ -326,7 +332,7 @@
 
         /* Buttons & Forms */
         .btn-primary {
-            background: #4338ca;
+            background: #11b76d;
             color: #ffffff;
             font-weight: 600;
             padding: 0.65rem 1.25rem;
@@ -338,12 +344,12 @@
             align-items: center;
             gap: 0.5rem;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+            box-shadow: 0 4px 12px rgba(17, 183, 109, 0.25);
         }
         .btn-primary:hover {
-            background: #3730a3;
+            background: #0e9a5b;
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(67, 56, 202, 0.35);
+            box-shadow: 0 6px 16px rgba(17, 183, 109, 0.35);
         }
 
         .btn-secondary {
@@ -377,7 +383,7 @@
 
         .form-input:focus, .form-select:focus, .form-textarea:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.15);
+            box-shadow: 0 0 0 3px rgba(17, 183, 109, 0.2);
         }
 
         /* Badges */
@@ -405,47 +411,79 @@
     </style>
     {% block extra_head %}{% endblock %}
     <link rel="stylesheet" href="{% static 'workspace.css' %}">
-</head>
+{% include 'tenants/light_theme.html' %}</head>
 <body>
     <div class="app-layout">
         {% if user.is_authenticated %}
         <!-- Left Vertical Icon Sidebar -->
         <aside class="sidebar" aria-label="Main navigation">
-            <a class="brand-lockup" href="/" aria-label="CoolBreeze home"><span class="brand-mark">✳</span><span><span class="brand-name">CoolBreeze</span><br><span class="brand-caption">Service workspace</span></span></a>
+            <a class="brand-lockup" href="/" aria-label="Neoriz home"><img src="{% static 'logo.png' %}" alt="Logo" class="brand-logo-img" style="width: 38px; height: 38px; border-radius: 11px; object-fit: contain; box-shadow: 0 3px 10px rgba(17, 183, 109, 0.25); flex-shrink: 0;"><span><span class="brand-name">Neoriz</span><br><span class="brand-caption">WhatsApp Automation</span></span></a>
             <nav class="sidebar-nav">
                 <button class="nav-icon-btn active" data-tab="tab-overview" title="Overview"><span class="nav-glyph">▦</span><span class="nav-label">Overview</span></button>
-                <button class="nav-icon-btn" data-tab="tab-services" title="Services"><span class="nav-glyph">◇</span><span class="nav-label">Services</span></button>
-                {% if user.is_staff or user.is_superuser %}
-                <button class="nav-icon-btn" data-tab="tab-leads" title="Conversations"><span class="nav-glyph">☷</span><span class="nav-label">Conversations</span></button>
+                <button class="nav-icon-btn" data-tab="tab-services" title="Services & Products"><span class="nav-glyph">◇</span><span class="nav-label">Services</span></button>
+                {% if user.is_staff or user.is_superuser or request.membership %}
+                <button class="nav-icon-btn" data-tab="tab-leads" title="Conversations"><span class="nav-glyph">☷</span><span class="nav-label">Chats</span></button>
                 <button class="nav-icon-btn" data-tab="tab-customers" title="Customers"><span class="nav-glyph">◎</span><span class="nav-label">Customers</span></button>
+                <a href="{% url 'crm-overview' %}" class="nav-icon-btn {% if 'crm' in request.path %}active{% endif %}" title="CRM"><span class="nav-glyph">◈</span><span class="nav-label">CRM</span></a>
                 {% endif %}
-                <button class="nav-icon-btn" data-tab="tab-bookings" title="Bookings"><span class="nav-glyph">▤</span><span class="nav-label">Bookings</span></button>
-                {% if user.is_superuser %}<button class="nav-icon-btn" data-tab="tab-users" title="Team"><span class="nav-glyph">♧</span><span class="nav-label">Team</span></button>{% endif %}
+                <button class="nav-icon-btn" data-tab="tab-bookings" title="Requests"><span class="nav-glyph">▤</span><span class="nav-label">Requests</span></button>
+                {% if user.is_superuser or request.membership.is_owner_or_admin %}<button class="nav-icon-btn" data-tab="tab-users" title="Team"><span class="nav-glyph">♧</span><span class="nav-label">Team</span></button>{% endif %}
+                {% if user.is_superuser or request.membership.is_owner_or_admin %}<a href="{% url 'onboarding-wizard' %}" class="nav-icon-btn" title="Setup Wizard"><span class="nav-glyph">⚡</span><span class="nav-label">Setup</span></a>{% endif %}
+                {% if user.is_superuser %}
+                <a href="{% url 'platform-dashboard' %}" class="nav-icon-btn {% if 'platform' in request.path %}active{% endif %}" title="Platform Administration"><span class="nav-glyph">❖</span><span class="nav-label">Platform</span></a>
+                {% endif %}
             </nav>
             <div class="sidebar-footer">
-                {% if user.is_staff %}<a href="/admin/" class="nav-icon-btn" title="Settings"><span class="nav-glyph">⚙</span><span class="nav-label">Business settings</span></a>{% endif %}
+                {% if request.is_inspecting %}
+                <a href="{% url 'platform-exit-inspection' %}" class="nav-icon-btn" title="Exit Inspection Mode" style="color: #f59e0b;"><span class="nav-glyph">↩</span><span class="nav-label">Exit Inspect</span></a>
+                {% endif %}
                 <a href="{% url 'logout' %}" class="nav-icon-btn" title="Sign out"><span class="nav-glyph">↗</span><span class="nav-label">Sign out</span></a>
-                <div class="sidebar-note">A little less admin.<br>A little more breathing room.</div>
+                <div class="sidebar-note">Neoriz Solutions<br>WhatsApp Automation SaaS</div>
             </div>
         </aside>
         {% endif %}
 
         <!-- Main Content Area -->
         <div class="main-wrapper">
+            {% if user.is_authenticated and request.is_inspecting %}
+            <div style="background: linear-gradient(90deg, #f59e0b, #d97706); color: white; padding: 0.75rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.88rem;">
+                    <span style="font-size: 1.25rem;">🔍</span>
+                    <span><strong>Inspection Mode:</strong> You are viewing workspace <u>{{ request.tenant.name }}</u> with Platform Superadmin privileges. Live actions affect this workspace.</span>
+                </div>
+                <a href="{% url 'platform-exit-inspection' %}" style="background: #ffffff; color: #b45309; font-weight: 700; padding: 0.4rem 0.9rem; font-size: 0.8rem; border-radius: 8px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                    Exit Inspection Mode
+                </a>
+            </div>
+            {% endif %}
             {% if user.is_authenticated %}
             <header class="topbar">
-                <div><div class="topbar-kicker">Your service workspace</div><h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1></div>
+                <div>
+                    <div class="topbar-kicker">{% if request.tenant %}{{ request.tenant.name }}{% if request.tenant.plan %} ({{ request.tenant.get_plan_display }}){% endif %}{% else %}Neoriz WhatsApp Automation Platform{% endif %}</div>
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
 
                 <div class="topbar-right">
+                    {% if request.user_tenants|length > 1 %}
+                    <form method="post" action="{% url 'switch-tenant' %}" style="display:inline-block; margin-right: 1rem;">
+                        {% csrf_token %}
+                        <select name="tenant_id" onchange="this.form.submit()" class="form-select" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; border-radius: 8px;">
+                            {% for t in request.user_tenants %}
+                            <option value="{{ t.id }}" {% if request.tenant.id == t.id %}selected{% endif %}>{{ t.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    {% endif %}
                     <div class="user-pill">
                         <div class="user-avatar">{{ user.username|first|upper }}</div>
                         <div class="user-info">
                             <span class="user-name">{{ user.first_name|default:user.username }}</span>
                             <span class="user-role">
-                                {% if user.is_superuser %}Superadmin
+                                {% if user.is_superuser %}Platform Superadmin
+                                {% elif request.membership %}{{ request.membership.get_role_display }}
                                 {% elif user.is_staff %}Staff Operator
                                 {% elif user.customer_profile %}Verified Customer
-                                {% else %}User{% endif %}
+                                {% else %}Workspace Member{% endif %}
                             </span>
                         </div>
                     </div>
@@ -469,5 +507,5 @@
     </div>
 
     {% block extra_js %}{% endblock %}
-</body>
+{% include 'tenants/password_visibility.html' %}</body>
 </html>

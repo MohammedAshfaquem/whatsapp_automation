@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Sign In &bull; CoolBreeze AC Automation{% endblock %}
+{% block title %}Sign In &bull; Neoriz WhatsApp Automation{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -29,15 +30,13 @@
     }
 
     .login-logo {
-        width: 56px;
-        height: 56px;
-        background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
-        border-radius: 18px;
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.75rem;
-        box-shadow: 0 8px 20px rgba(67, 56, 202, 0.3);
+        box-shadow: 0 10px 30px rgba(17, 183, 109, 0.3);
         margin-bottom: 1.25rem;
     }
 
@@ -103,9 +102,9 @@
 <div class="login-wrapper">
     <div class="login-card">
         <div class="login-header">
-            <div class="login-logo">✳</div>
-            <h1 class="login-title">Welcome to CoolBreeze</h1>
-            <p class="login-subtitle">Your services, conversations, and visits. Together.</p>
+            <img src="{% static 'logo.png' %}" alt="Neoriz WhatsApp Automation Logo" style="width: 76px; height: 76px; border-radius: 22px; box-shadow: 0 10px 30px rgba(17, 183, 109, 0.3); margin-bottom: 1.25rem; object-fit: contain;">
+            <h1 class="login-title">Neoriz WhatsApp Automation</h1>
+            <p class="login-subtitle">Conversations, automation, and customer management.</p>
         </div>
 
         <form method="post" action="{% url 'login' %}">
@@ -124,9 +123,14 @@
                 <span>Sign in to your workspace</span>
                 <span>→</span>
             </button>
-        </form>
+        </form><p style="text-align:center;margin-top:1rem"><a href="/password-reset/">Forgot your password?</a></p>
 
-        <div class="credentials-hint">Need access? Contact your service team. Customers use the account details provided when registered.</div>
+        <div style="margin-top: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+            Don't have a workspace yet? <a href="{% url 'signup' %}" style="color: #11b76d; font-weight: 700;">Create a workspace &rarr;</a>
+            <div style="margin-top: 0.5rem;"><a href="{% url 'marketing-landing' %}" style="color: #64748b; font-size: 0.8rem;">&larr; Return to home</a></div>
+        </div>
+
+        <div class="credentials-hint">Need access? Contact your workspace administrator. Workspace owners sign in with their registered email.</div>
     </div>
 </div>
 {% endblock %}

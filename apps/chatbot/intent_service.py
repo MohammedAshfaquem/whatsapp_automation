@@ -23,6 +23,17 @@ class IntentType(str, Enum):
     IDENTITY = "IDENTITY"
     HANDOVER = "HANDOVER"
     UNKNOWN = "UNKNOWN"
+    # IT Agency & Product Intents
+    PRODUCT_ENQUIRY = "PRODUCT_ENQUIRY"
+    PRODUCT_CAPABILITY = "PRODUCT_CAPABILITY"
+    PRODUCT_PRICING = "PRODUCT_PRICING"
+    PRODUCT_DEMO = "PRODUCT_DEMO"
+    PRODUCT_INTEGRATION = "PRODUCT_INTEGRATION"
+    CUSTOMER_SUPPORT = "CUSTOMER_SUPPORT"
+    PRODUCT_VS_SERVICE = "PRODUCT_VS_SERVICE"
+    RESTAURANT_PROBLEM = "RESTAURANT_PROBLEM"
+    WHATSAPP_LEAD_PROBLEM = "WHATSAPP_LEAD_PROBLEM"
+
 
 class IntentService:
     """
@@ -46,7 +57,7 @@ class IntentService:
             r'(?:\s+(?:there|bro|brother|buddy|mate|friend|sir))?', text))
 
     HANDOVER_PATTERNS = [
-        r'\b(talk\s*to\s*(an?\s*)?(human|agent|person|owner|support|team)|human\s*support|connect\s*(me\s*)?to|speak\s*with\s*(an?\s*)?(agent|human|owner|team))\b'
+        r'\b(talk\s*to\s*(?:an?\s*)?(?:human|agent|person|owner|support|team)|human\s*support|connect\s*(?:me\s*)?to\s*(?:an?\s*)?(?:human|person|agent|team|staff|executive|owner)|speak\s*with\s*(?:an?\s*)?(?:agent|human|owner|team))\b'
     ]
 
     GREETING_PATTERNS = [
@@ -230,18 +241,118 @@ class IntentService:
 
         # 2. New Booking intent
         if re.search(r'\b(book cheyy|booking venam|visit venam)\b|ബുക്ക്|बुक', msg):
-            return IntentType.BOOKING_START, cls.find_matching_service(msg)
+            from apps.business.domain import is_it_business
+            matched_item = (cls.find_matching_product(msg) or cls.find_matching_service(msg)) if is_it_business() else cls.find_matching_service(msg)
+            return IntentType.BOOKING_START, matched_item
         for pat in cls.BOOKING_PATTERNS:
             if re.search(pat, msg):
-                matched_service = cls.find_matching_service(msg)
-                return IntentType.BOOKING_START, matched_service
+                from apps.business.domain import is_it_business
+                matched_item = (cls.find_matching_product(msg) or cls.find_matching_service(msg)) if is_it_business() else cls.find_matching_service(msg)
+                return IntentType.BOOKING_START, matched_item
 
         # A shop address request can name a service without becoming a price enquiry.
         coverage_question = any(re.search(pat, msg) for pat in cls.AREAS_PATTERNS)
         if not coverage_question and any(re.search(pat, msg) for pat in cls.LOCATION_PATTERNS):
             return IntentType.SHOP_LOCATION, None
 
-        problem = cls.ac_problem_kind(msg)
+        from apps.business.domain import is_it_business
+        if is_it_business():
+            # Button/action shortcuts for products
+            if msg.startswith(('demo_product_', 'book_product_')):
+                raw_id = re.sub(r'^[a-z_]+', '', msg)
+                try:
+                    from apps.business.models import Product
+                    prod = Product.objects.filter(id=int(raw_id), is_active=True).first()
+                    if prod:
+                        return IntentType.BOOKING_START, prod
+                except (ValueError, TypeError):
+                    pass
+
+            if msg.startswith(('product_', 'check_product_')):
+                raw_id = re.sub(r'^[a-z_]+', '', msg)
+                try:
+                    from apps.business.models import Product
+                    prod = Product.objects.filter(id=int(raw_id), is_active=True).first()
+                    if prod:
+                        return IntentType.PRODUCT_ENQUIRY, prod
+                except (ValueError, TypeError):
+                    pass
+
+            # Existing Customer Support
+            support_target = cls.is_customer_support_enquiry(msg)
+            if support_target is not None:
+                return IntentType.CUSTOMER_SUPPORT, support_target
+
+            # Product vs Agency Service Comparison
+            if (re.search(r'\b(?:custom\s+software|build\s+(?:a\s+)?custom|custom\s+app)\b', msg) and
+                    re.search(r'\b(?:tablo|crm|whatsapp\s+crm|ready[\s-]made|existing\s+product)\b', msg)) or \
+               re.search(r'\b(?:compare|comparison|difference\s+between)\s+.*(?:custom|tablo|crm)\b', msg):
+                matched_prod = cls.find_matching_product(msg)
+                return IntentType.PRODUCT_VS_SERVICE, matched_prod
+
+            # Restaurant operational problem probe (unprompted customer problem)
+            if re.search(r'\b(?:we\s+run|running|have|our)\s+(?:a\s+)?(?:restaurant|cafe|café|diner|food\s+court|eatery)\b', msg) and \
+               re.search(r'\b(?:orders?|kitchen|billing|queue|confusion|confusing|mixed\s+up|delay)\b', msg):
+                return IntentType.RESTAURANT_PROBLEM, None
+
+            # WhatsApp lead problem probe
+            if re.search(r'\bwhatsapp\b', msg) and re.search(r'\b(?:leads?|enquir(?:y|ies))\b', msg) and \
+               re.search(r'\b(?:get\s+lost|missing|missed|unanswered|delay|too\s+many|confusing|follow[\s-]*up)\b', msg):
+                return IntentType.WHATSAPP_LEAD_PROBLEM, None
+
+            # Demo request
+            if re.search(r'\b(?:demo|walkthrough|preview|presentation)\b', msg):
+                matched_prod = cls.find_matching_product(msg)
+                matched_svc = cls.find_matching_service(msg)
+                if matched_prod:
+                    return IntentType.BOOKING_START, matched_prod
+                if matched_svc:
+                    return IntentType.BOOKING_START, matched_svc
+                return IntentType.BOOKING_START, None
+
+            # Product Matching
+            matched_prod = cls.find_matching_product(msg)
+            if matched_prod:
+                # Check price
+                for pat in cls.PRICE_PATTERNS:
+                    if re.search(pat, msg):
+                        return IntentType.PRODUCT_PRICING, matched_prod
+                from apps.business.models import Product
+                if isinstance(matched_prod, Product):
+                    # Check capability or integration query
+                    kind, target_obj = cls.find_product_capability_or_integration(matched_prod, msg)
+                    if kind == 'capability':
+                        return IntentType.PRODUCT_CAPABILITY, (matched_prod, target_obj)
+                    if kind == 'integration':
+                        return IntentType.PRODUCT_INTEGRATION, (matched_prod, target_obj)
+                return IntentType.PRODUCT_ENQUIRY, matched_prod
+
+            # Consultation booking request
+            if re.search(r'\b(?:book|schedule|arrange|request)\s+(?:a\s+)?(?:consultation|appointment|call|meeting)\b', msg) or \
+               re.search(r'\b(book cheyy|booking venam|consultation venam)\b|ബുക്ക്|बुक', msg):
+                matched_svc = cls.find_matching_service(msg)
+                return IntentType.BOOKING_START, matched_svc
+            for pat in cls.BOOKING_PATTERNS:
+                if re.search(pat, msg):
+                    matched_svc = cls.find_matching_service(msg)
+                    return IntentType.BOOKING_START, matched_svc
+
+            # Agency Service Matching
+            matched_svc = cls.find_matching_service(msg)
+            if matched_svc:
+                for pat in cls.PRICE_PATTERNS:
+                    if re.search(pat, msg):
+                        return IntentType.SERVICE_PRICE, matched_svc
+                if msg == matched_svc.name.lower():
+                    return IntentType.SERVICE_SELECT, matched_svc
+                return IntentType.SERVICE_PRICE, matched_svc
+
+            # Company overview / what do you do / service list
+            if any(re.search(pat, msg) for pat in cls.SERVICE_LIST_PATTERNS) or \
+               re.search(r'\bwhat\s+(?:do\s+you|does\s+neoriz)\s+(?:do|provide|offer)\b|\babout\s+neoriz\b', msg):
+                return IntentType.SERVICE_LIST, None
+
+        problem = None if is_it_business() else cls.ac_problem_kind(msg)
         price_or_menu = any(re.search(pat, msg) for pat in cls.PRICE_PATTERNS + cls.SERVICE_LIST_PATTERNS)
         if problem and not price_or_menu:
             # A complaint may include a business question; answer that question first.
@@ -271,6 +382,7 @@ class IntentService:
         for pat in cls.PRICE_PATTERNS + cls.SERVICE_LIST_PATTERNS:
             if re.search(pat, msg):
                 return IntentType.SERVICE_LIST, None
+
 
         # 4. Check direct FAQ matches before generic regex
         matched_faq = cls.find_matching_faq(msg)
@@ -303,6 +415,148 @@ class IntentService:
         return IntentType.UNKNOWN, None
 
     @classmethod
+    def is_customer_support_enquiry(cls, message_lower: str):
+        """Identify enquiries regarding existing accounts, installations, or technical problems."""
+        support_indicators = (
+            r'\bexisting\s+(?:customer|client|user|account)\b',
+            r'\balready\s+(?:using|have|bought|installed|purchased)\s+(?:tablo|crm|whatsapp|your\s+software|your\s+product)\b',
+            r'\b(?:our|my)\s+.*?\b(?:not\s+(?:working|loading)|down|broken|failing|error|issue|problem|bug)\b',
+            r'\b(?:not\s+(?:working|loading)|down|broken|failing|error|bug|issue)\s+.*?\b(?:at|in|on|with)\s+(?:our|my|table|outlet|store|pos|qr)\b',
+            r'\b(?:technical\s+)?support\s+for\s+(?:our\s+)?(?:tablo|crm|website|app|installation|account)\b',
+            r'\baccount\s+reference\b',
+            r'\b(?:facing|having)\s+(?:an?\s+)?(?:issue|problem|error|bug)\s+(?:with|in)\s+(?:our\s+)?(?:tablo|crm|website|app)\b',
+            r'\b(?:complaint|raised\s+a\s+complaint)\b',
+        )
+        if any(re.search(pat, message_lower) for pat in support_indicators):
+            matched_prod = cls.find_matching_product(message_lower)
+            matched_svc = cls.find_matching_service(message_lower)
+            return matched_prod or matched_svc or True
+        return None
+
+    @classmethod
+    def find_matching_product(cls, message_lower: str):
+        """
+        Search active products (TABLO, WhatsApp Automation + CRM) matching keywords.
+        Handles negations and prevents premature matching of custom agency requests.
+        """
+        from apps.business.models import Product
+        active_products = Product.objects.filter(is_active=True)
+        if not active_products.exists():
+            return None
+
+        # Check button payloads: e.g. demo_product_1, product_1
+        m = re.match(r'^(?:demo_|product_|check_product_)?product_(\d+)$', message_lower)
+        if m:
+            prod = active_products.filter(id=int(m.group(1))).first()
+            if prod:
+                return prod
+
+        # Handle explicit negations: "not tablo", "don't want tablo", "instead of tablo"
+        tablo_negated = bool(re.search(r'\b(?:not|no|don\'t want|dont want|without|instead of)\s+(?:the\s+)?tablo\b', message_lower))
+        crm_negated = bool(re.search(r'\b(?:not|no|don\'t want|dont want|without|instead of)\s+(?:the\s+)?(?:crm|whatsapp crm|whatsapp automation)\b', message_lower))
+
+        # Check TABLO keywords
+        has_tablo = False
+        if not tablo_negated:
+            tablo_terms = (
+                r'\btablo\b',
+                r'\brestaurant\s+(?:software|app|system|solution|pos)\b',
+                r'\brestaurant\b.*\b(?:orders?|order management|system for orders|system)\b',
+                r'\bqr\s+(?:self\s+)?ordering\b',
+                r'\bcounter\s+pickup\s+token\b',
+                r'\bfood\s+court\s+ordering\b',
+                r'\bcafe\s+ordering\s+(?:software|system|app)\b',
+            )
+            if any(re.search(term, message_lower) for term in tablo_terms):
+                if not re.search(r'\b(?:build|develop|code|create|make)\s+(?:a\s+)?(?:custom|bespoke|new)\s+(?:restaurant\s+)?(?:app|software|website)\b', message_lower):
+                    has_tablo = True
+
+        # Check WhatsApp Automation + CRM keywords
+        has_crm = False
+        if not crm_negated:
+            crm_terms = (
+                r'\bwhatsapp\s+(?:automation|crm|bot|enquir(?:y|ies)|leads?|follow[\s-]*ups?)\b',
+                r'\blead\s+automation\b',
+                r'\bwhatsapp\s+customer\s+enquir(?:y|ies)\b',
+                r'\b(?:whatsapp\s+business\s+api|whatsapp\s+cloud\s+api)\b',
+                r'\bwhatsapp\b.*\b(?:crm|leads?|enquir(?:y|ies)|captur(?:e|ing))\b',
+            )
+            if any(re.search(term, message_lower) for term in crm_terms):
+                has_crm = True
+
+        tablo_obj = active_products.filter(name__iexact='TABLO').first() if has_tablo else None
+        crm_obj = active_products.filter(name__icontains='WhatsApp Automation').first() if has_crm else None
+
+        if tablo_obj and crm_obj:
+            return (tablo_obj, crm_obj)
+        if tablo_obj:
+            return tablo_obj
+        if crm_obj:
+            return crm_obj
+
+        # Also check product aliases field in database
+        for prod in active_products:
+            if prod.name.lower() in message_lower:
+                return prod
+            if prod.aliases:
+                alias_list = [a.strip().lower() for a in prod.aliases.split(',') if a.strip()]
+                for alias in alias_list:
+                    if re.search(r'\b' + re.escape(alias) + r'\b', message_lower):
+                        return prod
+
+        return None
+
+    @classmethod
+    def find_product_capability_or_integration(cls, product, message_lower: str):
+        """
+        Check if message specifically queries a verified capability or integration.
+        Returns ('capability', cap_obj) or ('integration', int_obj) or (None, None).
+        """
+        caps = product.capabilities.filter(is_active=True)
+        for cap in caps:
+            name_low = cap.name.lower()
+            if 'qr' in name_low and any(w in message_lower for w in ('qr', 'scan', 'camera', 'self ordering', 'self-ordering')):
+                return 'capability', cap
+            if 'token' in name_low and any(w in message_lower for w in ('token', 'pickup', 'counter slip', 'order token')):
+                return 'capability', cap
+            if 'pos' in name_low and any(w in message_lower for w in ('pos', 'billing', 'counter billing', 'billing system')):
+                return 'capability', cap
+            if 'kitchen display' in name_low and any(w in message_lower for w in ('kds', 'kitchen display', 'kitchen screen', 'display screen')):
+                return 'capability', cap
+            if 'kitchen slip' in name_low and any(w in message_lower for w in ('kitchen slip', 'kot', 'receipt printer')):
+                return 'capability', cap
+            if 'inventory' in name_low and any(w in message_lower for w in ('inventory', 'recipe', 'ingredient', 'stock')):
+                return 'capability', cap
+            if 'reporting' in name_low and any(w in message_lower for w in ('report', 'analytics', 'dashboard', 'sales report', 'accounting')):
+                return 'capability', cap
+            if 'follow-up' in name_low and any(w in message_lower for w in ('follow up', 'follow-up', 'followup', 'reminder', 'reminders', 'drip', 'auto message', 'auto-follow')):
+                return 'capability', cap
+            if 'shared' in name_low and any(w in message_lower for w in ('shared inbox', 'team inbox', 'multi-agent', 'multi agent', 'multiple agents')):
+                return 'capability', cap
+            if 'pipeline' in name_low and any(w in message_lower for w in ('pipeline', 'lead stage', 'deal stage', 'kanban')):
+                return 'capability', cap
+            if 'broadcast' in name_low and any(w in message_lower for w in ('broadcast', 'bulk message', 'campaign', 'mass message', 'marketing message')):
+                return 'capability', cap
+            if 'qualification' in name_low and any(w in message_lower for w in ('qualify', 'qualification', 'lead capture', 'questions')):
+                return 'capability', cap
+
+        ints = product.integrations.filter(is_active=True)
+        for int_obj in ints:
+            name_low = int_obj.name.lower()
+            if 'swiggy' in name_low and any(w in message_lower for w in ('swiggy', 'zomato', 'aggregator', 'online aggregator')):
+                return 'integration', int_obj
+            if 'pos' in name_low and any(w in message_lower for w in ('pos', 'petpooja', 'posist', 'tally')):
+                return 'integration', int_obj
+            if 'crm' in name_low and any(w in message_lower for w in ('hubspot', 'salesforce', 'zoho', 'crm integration', 'external crm')):
+                return 'integration', int_obj
+            if 'payment' in name_low and any(w in message_lower for w in ('payment', 'gateway', 'upi', 'razorpay', 'stripe', 'card payment')):
+                return 'integration', int_obj
+            if 'cloud api' in name_low and any(w in message_lower for w in ('meta api', 'cloud api', 'official api', 'whatsapp business api')):
+                return 'integration', int_obj
+
+        return None, None
+
+    @classmethod
     def find_matching_service(cls, message_lower: str) -> Optional[Service]:
         """
         Search active services in PostgreSQL matching keywords in the message.
@@ -317,6 +571,28 @@ class IntentService:
                 return svc
 
         # Check explicit keywords
+        from apps.business.domain import is_it_business
+        if is_it_business():
+            # If asking about WhatsApp CRM or TABLO product, don't hijack to custom software unless explicit
+            is_product_query = any(w in message_lower for w in ('tablo', 'whatsapp crm', 'whatsapp automation', 'restaurant software'))
+            is_explicit_custom = any(w in message_lower for w in ('custom software', 'bespoke software', 'software development', 'build custom', 'custom app'))
+
+            aliases = [
+                ('website revamp', ('revamp', 'redesign', 'modernize website')),
+                ('ecommerce', ('ecommerce', 'e-commerce', 'online store', 'online shop')),
+                ('mobile app', ('mobile app', 'android app', 'ios app', 'iphone app', 'flutter app')),
+                ('ui/ux', ('ui/ux', 'ui ux', 'interface design', 'ux design')),
+                ('software', ('software development', 'custom software', 'business system', 'custom workflow')),
+                ('website development', ('website development', 'web development', 'web application', 'web app', 'business website', 'website')),
+            ]
+            if is_product_query and not is_explicit_custom:
+                aliases = [a for a in aliases if a[0] != 'software']
+
+            for name, terms in aliases:
+                if any(term in message_lower for term in terms):
+                    return active_services.filter(name__icontains=name).first()
+            return next((svc for svc in active_services if svc.name.lower() in message_lower), None)
+
         keywords_map = {
             'gas': ['gas', 'refrigerant', 'freon', 'filling', 'leak', 'cooling'],
             'install': ['install', 'installation', 'fitting', 'mount'],

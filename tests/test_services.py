@@ -92,17 +92,55 @@ class TestServiceModel:
         assert "Inactive Service 2" not in formatted
 
     def test_service_list_api(self, client):
+        from django.contrib.auth.models import User
+        from apps.tenants.models import Tenant, TenantMembership, TenantRole
+
         Service.objects.all().delete()
-        Service.objects.create(
+        tenant1 = Tenant.objects.create(name="Service Test Tenant 1", slug="service-test-t1")
+        tenant2 = Tenant.objects.create(name="Service Test Tenant 2", slug="service-test-t2")
+
+        svc1 = Service.objects.create(
+            tenant=tenant1,
             name="API Service Test",
             description="Testing API retrieval",
             price_type=PriceType.STARTING_FROM,
             price_amount=600.00,
             is_active=True
         )
-        response = client.get('/api/services/')
-        assert response.status_code == 200
-        data = response.json()
+        svc2 = Service.objects.create(
+            tenant=tenant2,
+            name="Other Tenant Service",
+            description="Should not leak",
+            price_type=PriceType.FIXED,
+            price_amount=1200.00,
+            is_active=True
+        )
+
+        # 1. Unauthenticated request denied with 401 JSON
+        unauth_resp = client.get('/api/services/')
+        assert unauth_resp.status_code == 401
+        assert unauth_resp.json()['error'] == 'Authentication required'
+
+        # 2. Authenticated tenant member gets scoped catalog
+        from apps.tenants.models import UserSecurityProfile
+        user = User.objects.create_user(username="servicestaff", password="password123")
+        profile = UserSecurityProfile.get_or_create_for_user(user)
+        profile.email_verified = True
+        profile.save()
+
+        TenantMembership.objects.create(tenant=tenant1, user=user, role=TenantRole.STAFF)
+        client.force_login(user)
+
+        session = client.session
+        session['active_tenant_id'] = tenant1.id
+        session.save()
+
+        auth_resp = client.get('/api/services/')
+        assert auth_resp.status_code == 200
+        data = auth_resp.json()
         assert len(data['results']) == 1
         assert data['results'][0]['name'] == "API Service Test"
         assert data['results'][0]['formatted_price'] == "₹600 onwards"
+        # Confirm cross-tenant isolation
+        names = [s['name'] for s in data['results']]
+        assert "Other Tenant Service" not in names

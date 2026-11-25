@@ -1,9 +1,10 @@
 from django.contrib import admin
+from apps.tenants.admin import TenantScopedAdminMixin
 from .models import WhatsAppConfig, WhatsAppWebhookLog, WhatsAppDelivery
 
 
 @admin.register(WhatsAppDelivery)
-class WhatsAppDeliveryAdmin(admin.ModelAdmin):
+class WhatsAppDeliveryAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'recipient_phone', 'status', 'attempts', 'updated_at')
     list_filter = ('status',)
     search_fields = ('recipient_phone', 'provider_message_id', 'dedup_key')
@@ -13,7 +14,7 @@ class WhatsAppDeliveryAdmin(admin.ModelAdmin):
         return False
 
 @admin.register(WhatsAppConfig)
-class WhatsAppConfigAdmin(admin.ModelAdmin):
+class WhatsAppConfigAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'is_enabled', 'phone_number_id', 'business_account_id', 'updated_at')
     list_editable = ('is_enabled',)
     fieldsets = (
@@ -28,13 +29,13 @@ class WhatsAppConfigAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
-        # Only allow 1 configuration instance (singleton pattern)
-        if self.model.objects.exists():
+        tenant = getattr(request, 'tenant', None)
+        if tenant and self.model.objects.filter(tenant=tenant).exists():
             return False
         return super().has_add_permission(request)
 
 @admin.register(WhatsAppWebhookLog)
-class WhatsAppWebhookLogAdmin(admin.ModelAdmin):
+class WhatsAppWebhookLogAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = ('id', 'event_type', 'sender_phone', 'whatsapp_message_id', 'is_processed', 'created_at')
     list_filter = ('is_processed', 'event_type', 'created_at')
     search_fields = ('sender_phone', 'whatsapp_message_id', 'error_message')

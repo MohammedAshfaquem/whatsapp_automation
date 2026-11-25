@@ -1,0 +1,72 @@
+{% extends "marketing/base_marketing.html" %}
+
+{% block title %}Plans & Pricing — Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4rem 0 2rem; background: #ffffff; border-bottom: 1px solid var(--border-card);">
+    <div class="container" style="text-align: center; max-width: 800px;">
+        <div style="color: var(--brand-green); font-weight: 800; font-size: 0.88rem; text-transform: uppercase; margin-bottom: 0.5rem;">Pricing Philosophy</div>
+        <h1 style="font-size: 2.6rem; font-weight: 900; color: var(--text-heading); margin-bottom: 1rem;">Simple, Predictable Capacity Plans</h1>
+        <p style="font-size: 1.1rem; color: var(--text-muted);">Choose a plan designed for your team size. We separate platform software capacity from official Meta per-message charges.</p>
+    </div>
+</section>
+
+<section style="padding: 4rem 0;">
+    <div class="container">
+        <!-- Plan Cards Header -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 4rem;">
+            {% for plan in plans %}
+            <div style="background: #ffffff; border: {% if plan.is_featured %}2px solid var(--brand-green){% else %}1px solid var(--border-card){% endif %}; border-radius: var(--radius-lg); padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                {% if plan.badge %}
+                <span style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--brand-green); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 12px;">{{ plan.badge }}</span>
+                {% endif %}
+
+                <div>
+                    <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.25rem;">{{ plan.name }}</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); min-height: 45px;">{{ plan.description }}</p>
+
+                    <div style="margin: 1.5rem 0; padding-bottom: 1.25rem; border-bottom: 1px solid #f1f5f9;">
+                        <div style="font-size: 1.6rem; font-weight: 800; color: var(--text-heading);">{{ plan.get_price_display_mode_display }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Platform capacity fee</div>
+                    </div>
+
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.88rem; margin-bottom: 2rem;">
+                        <li>✓ <strong>{{ plan.max_staff }} Team Seats</strong> (Owner/Admins count)</li>
+                        <li>✓ <strong>{{ plan.max_contacts|default:"1,000" }}</strong> Customer Contacts</li>
+                        <li>✓ <strong>{{ plan.max_services }}</strong> Active Catalog Services</li>
+                        <li>✓ <strong>{{ plan.monthly_message_allowance }}</strong> Messages / Mo Allowance</li>
+                        {% if plan.ai_assistant_enabled %}
+                        <li>✓ 24/7 Grounded Gemini AI</li>
+                        {% else %}
+                        <li style="color: #94a3b8; text-decoration: line-through;">— Grounded Gemini AI</li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <a href="{% url 'request-access' %}" class="btn {% if plan.is_featured %}btn-primary{% else %}btn-secondary{% endif %}" style="width: 100%;">
+                    Request {{ plan.name }} Access
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Meta Cloud API Provider Charges Information -->
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 2.5rem; max-width: 900px; margin: 0 auto;" id="meta-fees">
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--text-heading); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px;">
+                <span>⚖️</span> WhatsApp Cloud API Provider Fees
+            </h3>
+            <p style="font-size: 0.95rem; color: var(--text-body); line-height: 1.6; margin-bottom: 1.25rem;">
+                Platform subscription plans cover access to the software workspace, multi-agent shared inbox, CRM pipelines, and AI conversational grounding. Standard WhatsApp conversation charges apply in accordance with official Meta Cloud API policies.
+            </p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.25rem; font-size: 0.88rem; color: #334155;">
+                <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                    <li><strong>Service Conversations:</strong> Initiated when a customer messages your business first, governed by Meta's 24-hour customer service window guidelines.</li>
+                    <li><strong>Utility Conversations:</strong> Transactional updates and booking confirmations delivered via approved WhatsApp notification templates.</li>
+                    <li><strong>Marketing Conversations:</strong> Outbound updates and product information delivered to opted-in customer contacts.</li>
+                    <li><strong>Provider Billing:</strong> Meta messaging charges are managed through your Meta WhatsApp Business Account based on official Meta rate cards.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

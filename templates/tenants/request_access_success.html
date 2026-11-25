@@ -1,0 +1,38 @@
+{% extends "marketing/base_marketing.html" %}
+{% load static %}
+
+{% block title %}Access Request Received &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 5rem 0; min-height: 80vh;">
+    <div class="container" style="max-width: 580px; text-align: center;">
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 3rem 2.5rem; box-shadow: var(--shadow-md);">
+            <div style="width: 64px; height: 64px; background: #ecfdf5; border: 2px solid #10b981; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+
+            <h1 style="font-size: 1.85rem; font-weight: 900; color: var(--text-heading); margin-bottom: 0.75rem;">
+                Request Successfully Received
+            </h1>
+            <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.75rem;">
+                Thank you, <strong>{{ demo_request.name }}</strong>. We have logged your access request for <strong>{{ demo_request.company_name }}</strong>.
+            </p>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; text-align: left; margin-bottom: 2rem; font-size: 0.85rem; color: #475569; line-height: 1.6;">
+                <div style="font-weight: 700; color: #1e293b; margin-bottom: 0.5rem;">Next Steps in the Provisioning Process:</div>
+                <ul style="margin: 0; padding-left: 1.25rem;">
+                    <li>Our Super Admin reviews your requirements and allocates your client workspace.</li>
+                    <li>A single-use, secure activation link will be delivered to <strong>{{ demo_request.email }}</strong>.</li>
+                    <li>Click the link to set your secure password, access your CRM, and connect your WhatsApp number.</li>
+                </ul>
+            </div>
+
+            <a href="{% url 'login' %}" class="btn btn-primary" style="display: inline-block; padding: 0.75rem 2rem; font-weight: 700;">
+                Return to Sign In
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

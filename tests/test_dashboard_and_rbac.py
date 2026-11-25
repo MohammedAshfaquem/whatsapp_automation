@@ -2,6 +2,7 @@ import json
 import pytest
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.contrib.messages import get_messages
 from apps.services.models import Service, PriceType
 from apps.chatbot.models import Customer, Conversation, Message, MessageDirection, SenderType
 from apps.bookings.models import Booking, BookingStatus
@@ -35,8 +36,12 @@ class TestDashboardAuthAndRBAC:
 
         # Visit dashboard
         res = client.get(reverse('dashboard'))
-        assert res.status_code == 200
-        assert b"Superadmin" in res.content
+        assert res.status_code == 302
+        assert res.url == '/app/platform/dashboard'
+        bootstrap = client.get(reverse('api-bootstrap'))
+        assert bootstrap.status_code == 200
+        assert bootstrap.json()['is_super_admin'] is True
+        assert bootstrap.json()['user']['id'] == admin_user.id
 
         # Superadmin creates a new staff user
         post_data = {
@@ -60,8 +65,12 @@ class TestDashboardAuthAndRBAC:
 
         # Visit dashboard - team tab should NOT be visible to regular staff
         res = client.get(reverse('dashboard'))
-        assert res.status_code == 200
-        assert b"Team & RBAC" not in res.content
+        assert res.status_code == 302
+        assert res.url == '/app/dashboard'
+        bootstrap = client.get(reverse('api-bootstrap'))
+        assert bootstrap.status_code == 200
+        assert bootstrap.json()['is_super_admin'] is False
+        assert bootstrap.json()['user']['id'] == staff_user.id
 
         # Direct POST attempt to user-create must be denied
         create_res = client.post(reverse('user-create'), {
@@ -70,7 +79,8 @@ class TestDashboardAuthAndRBAC:
             'role': 'staff'
         }, follow=True)
         assert not User.objects.filter(username='unauthorized_user').exists()
-        assert b"Permission denied: Only superadministrators can create new staff accounts" in create_res.content
+        assert any("Permission denied: Only superadministrators can create new staff accounts" in str(message)
+                   for message in get_messages(create_res.wsgi_request))
 
     def test_staff_user_can_add_new_service_with_contact_number(self, client):
         staff_user = User.objects.create_user(username='staff2', password='staffpass123', is_staff=True)

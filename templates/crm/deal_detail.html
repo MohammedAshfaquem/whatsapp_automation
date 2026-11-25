@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ deal.title }} - Deal Details{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<!-- Deal Header Card -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ deal.title }}</h2>
+                <span class="badge" style="
+                    padding: 4px 12px; border-radius: 14px; font-size: 0.78rem; font-weight: 700;
+                    {% if deal.stage.is_won %}background: #dcfce7; color: #15803d;
+                    {% elif deal.stage.is_lost %}background: #fee2e2; color: #b91c1c;
+                    {% else %}background: #e8f8f0; color: #11b76d;{% endif %}">
+                    {{ deal.stage.name }}
+                </span>
+            </div>
+
+            <div style="display: flex; gap: 1.5rem; font-size: 0.85rem; color: #64748b; margin-top: 0.5rem; flex-wrap: wrap;">
+                <span>👤 Contact: <a href="{% url 'crm-contact-detail' deal.contact.id %}" style="color: #11b76d; font-weight: 600;">{{ deal.contact.name|default:deal.contact.phone_number }}</a></span>
+                {% if deal.company %}
+                <span>🏢 Company: <a href="{% url 'crm-company-detail' deal.company.id %}" style="color: #11b76d; font-weight: 600;">{{ deal.company.name }}</a></span>
+                {% endif %}
+                <span>👤 Owner: <strong>{% if deal.owner %}{{ deal.owner.get_full_name|default:deal.owner.username }}{% else %}Unassigned{% endif %}</strong></span>
+                {% if deal.expected_close_date %}
+                <span>📅 Expected Close: <strong>{{ deal.expected_close_date|date:"d M Y" }}</strong></span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="text-align: right;">
+            <div style="font-size: 1.75rem; font-weight: 800; color: #0f172a;">
+                {% if deal.amount %}
+                {{ deal.currency }} {{ deal.amount|floatformat:2 }}
+                {% else %}
+                <span style="font-size: 1.1rem; color: #94a3b8;">Quotation-based</span>
+                {% endif %}
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">
+                Pipeline: {{ deal.pipeline.name }} • Probability: {{ deal.stage.probability }}%
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Pipeline Stage Bar -->
+    <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid #f1f5f9;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; overflow-x: auto; padding-bottom: 0.5rem;">
+            {% for st in available_stages %}
+            <div style="flex: 1; min-width: 110px; text-align: center;">
+                <div style="height: 6px; border-radius: 4px; margin-bottom: 0.4rem;
+                    {% if st.order < deal.stage.order or deal.stage.is_won and st.is_won %}background: #10b981;
+                    {% elif st.id == deal.stage.id %}
+                        {% if st.is_lost %}background: #ef4444;{% elif st.is_won %}background: #10b981;{% else %}background: #11b76d;{% endif %}
+                    {% else %}background: #e2e8f0;{% endif %}">
+                </div>
+                <div style="font-size: 0.75rem; font-weight: {% if st.id == deal.stage.id %}700{% else %}500{% endif %}; color: {% if st.id == deal.stage.id %}#1e293b{% else %}#64748b{% endif %};">
+                    {{ st.name }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Two-Column Layout -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.75rem;">
+    <!-- LEFT: Stage Transition & Audit Trail -->
+    <div>
+        <!-- Stage Transition Control -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Advance Sales Stage</h3>
+                    <p class="card-subtitle">Change deal stage with audit tracking and reason recording</p>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'crm-deal-move-stage' deal.id %}">
+                {% csrf_token %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">New Stage</label>
+                        <select name="stage_id" id="stageSelect" class="form-select" onchange="toggleLostReason(this.value)" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 8px;">
+                            {% for stg in available_stages %}
+                            <option value="{{ stg.id }}" {% if stg.id == deal.stage_id %}selected{% endif %} data-lost="{% if stg.is_lost %}1{% else %}0{% endif %}">
+                                {{ stg.name }} ({{ stg.probability }}%)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Transition Note (Optional)</label>
+                        <input type="text" name="notes" placeholder="e.g. Budget approved, demo scheduled..." class="form-control" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;">
+                    </div>
+                </div>
+
+                <!-- Lost Reason (Mandatory if Moving to Closed Lost) -->
+                <div id="lostReasonContainer" style="display: {% if deal.stage.is_lost %}block{% else %}none{% endif %}; margin-bottom: 1rem; background: #fee2e2; padding: 0.85rem; border-radius: 8px; border: 1px solid #fecdd3;">
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #991b1b; margin-bottom: 0.35rem;">Lost Reason * (Required for Closed Lost)</label>
+                    <input type="text" name="lost_reason" value="{{ deal.lost_reason|default:'' }}" placeholder="e.g. Price too high, chosen competitor, project delayed..." style="width: 100%; padding: 0.5rem; border: 1px solid #f87171; border-radius: 6px; font-size: 0.85rem;">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1.25rem;">Update Stage →</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stage Movement Audit Trail -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Deal Stage History & Audit</h3>
+                    <p class="card-subtitle">Verified transition log with timestamps and performers</p>
+                </div>
+            </div>
+
+            {% if deal.stage_history.all %}
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for hist in deal.stage_history.all %}
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #1e293b;">
+                            {% if hist.from_stage %}{{ hist.from_stage.name }}{% else %}(Created){% endif %}
+                            → <strong>{{ hist.to_stage.name }}</strong>
+                        </span>
+                        <span style="font-size: 0.75rem; color: #94a3b8;">{{ hist.created_at|date:"d M Y, H:i" }}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b;">
+                        Changed by <strong>{% if hist.changed_by %}{{ hist.changed_by.get_full_name|default:hist.changed_by.username }}{% else %}System{% endif %}</strong>
+                        {% if hist.notes %} • Note: <em>"{{ hist.notes }}"</em>{% endif %}
+                    </div>
+                    {% if hist.lost_reason %}
+                    <div style="font-size: 0.8rem; color: #b91c1c; font-weight: 600; margin-top: 0.25rem;">
+                        Lost Reason: {{ hist.lost_reason }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="text-align: center; color: #94a3b8; padding: 1.5rem;">No stage changes recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- RIGHT: Requirements, Context, & Tasks -->
+    <div>
+        <!-- Deal Requirements / Solution Scope -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-header">
+                <h4 class="card-title" style="font-size: 0.95rem;">Requirements & Scope</h4>
+            </div>
+            {% if deal.product %}
+            <div style="font-size: 0.82rem; color: #11b76d; font-weight: 700; margin-bottom: 0.5rem;">Product: {{ deal.product.name }}</div>
+            {% elif deal.service %}
+            <div style="font-size: 0.82rem; color: #11b76d; font-weight: 700; margin-bottom: 0.5rem;">Agency Service: {{ deal.service.name }}</div>
+            {% endif %}
+            <div style="font-size: 0.85rem; color: #334155; line-height: 1.5;">
+                {{ deal.requirements_summary|default:"No explicit requirements entered." }}
+            </div>
+        </div>
+
+        <!-- Deal Activities & Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h4 class="card-title" style="font-size: 0.95rem;">Deal Next Steps</h4>
+                    <p class="card-subtitle">Scheduled tasks for this deal</p>
+                </div>
+            </div>
+
+            <!-- Quick Add Activity Form -->
+            <form method="post" action="{% url 'crm-activity-create' %}" style="margin-bottom: 1rem; background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                {% csrf_token %}
+                <input type="hidden" name="deal" value="{{ deal.id }}">
+                <input type="hidden" name="contact" value="{{ deal.contact_id }}">
+                {% if deal.company_id %}<input type="hidden" name="company" value="{{ deal.company_id }}">{% endif %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                
+                <input type="text" name="title" placeholder="Follow-up task title..." style="width: 100%; padding: 0.45rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem; margin-bottom: 0.5rem;" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <select name="activity_type" style="padding: 0.35rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                        <option value="CALL">Call</option>
+                        <option value="MEETING">Meeting</option>
+                        <option value="DEMO">Demo</option>
+                        <option value="FOLLOW_UP" selected>Follow Up</option>
+                        <option value="TASK">Task</option>
+                    </select>
+                    <input type="datetime-local" name="due_date" style="padding: 0.35rem; font-size: 0.78rem; border-radius: 6px; border: 1px solid #cbd5e1;" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; font-size: 0.78rem; padding: 0.4rem;">+ Schedule Task</button>
+            </form>
+
+            {% if deal.activities.all %}
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                {% for act in deal.activities.all %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 6px; border: 1px solid #f1f5f9;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <form method="post" action="{% url 'crm-activity-toggle' act.id %}">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 1rem; color: {% if act.status == 'COMPLETED' %}#16a34a{% else %}#cbd5e1{% endif %};">
+                                {% if act.status == 'COMPLETED' %}☑{% else %}☐{% endif %}
+                            </button>
+                        </form>
+                        <span style="font-size: 0.82rem; font-weight: 600; color: #1e293b; {% if act.status == 'COMPLETED' %}text-decoration: line-through; color: #94a3b8;{% endif %}">{{ act.title }}</span>
+                    </div>
+                    <span style="font-size: 0.72rem; {% if act.is_overdue %}color: #dc2626; font-weight: 700;{% else %}color: #64748b;{% endif %}">{{ act.due_date|date:"d M" }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; padding: 0.5rem 0;">No tasks for this deal.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleLostReason(stageId) {
+    var select = document.getElementById('stageSelect');
+    var selectedOption = select.options[select.selectedIndex];
+    var isLost = selectedOption.getAttribute('data-lost') === '1';
+    var container = document.getElementById('lostReasonContainer');
+    if (isLost) {
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

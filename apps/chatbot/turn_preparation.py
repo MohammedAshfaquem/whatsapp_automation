@@ -46,7 +46,8 @@ def prepare_turn(message, conversation, intent, entity, media_id, flow_response)
             selected = entity or (None if for_other else conversation.service)
             step, data = BookingService.initial_state(conversation, selected, for_other)
             prompt_conversation = copy(conversation)
-            if selected or for_other:
+            from apps.services.models import Service
+            if isinstance(selected, Service) or (for_other and not selected):
                 prompt_conversation.service = selected
             result.booking_interpretation = GeminiChatService.interpret_booking_turn(text.build_contextual_prompt(
                 message, prompt_conversation, booking_context=json.dumps({'step': step, 'details': data}, ensure_ascii=False)))

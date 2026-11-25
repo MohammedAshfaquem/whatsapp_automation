@@ -89,6 +89,11 @@ TEXT = {
 
 
 def say(key, language='en'):
+    from apps.business.domain import is_it_business
+    if is_it_business():
+        from .it_language import TEXT as IT_TEXT
+        if key in IT_TEXT:
+            return IT_TEXT[key][{'en': 0, 'manglish': 1, 'ml': 2, 'hi': 3}.get(language, 0)]
     return TEXT[key][{'en': 0, 'manglish': 1, 'ml': 2, 'hi': 3}.get(language, 0)]
 
 

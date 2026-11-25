@@ -83,9 +83,13 @@ class TestChatbotAndBookings:
     def test_booking_owner_confirmation(self, client):
         # Create superuser / staff user for authorized booking management
         admin_user = User.objects.create_superuser(username='owner', password='ownerpassword', email='owner@example.com')
+        from apps.tenants.models import Tenant
+        tenant = Tenant.objects.create(name='Booking inspection', slug='booking-inspection')
         client.login(username='owner', password='ownerpassword')
+        session=client.session;session['inspecting_tenant_id']=tenant.pk;session.save()
 
         customer = Customer.objects.create(name="Jane Doe", phone_number="+919811122233")
+        customer.tenant=tenant;customer.save(update_fields=['tenant'])
         service = Service.objects.create(
             name="AC Gas Topup",
             description="Gas topup",
@@ -94,6 +98,7 @@ class TestChatbotAndBookings:
         )
         booking = Booking.objects.create(
             customer=customer,
+            tenant=tenant,
             service=service,
             service_address="Flat 402, Sunshine Apartments, Delhi",
             status=BookingStatus.PENDING

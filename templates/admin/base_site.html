@@ -1,0 +1,71 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+{% include 'tenants/password_visibility.html' %}
+<link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon.png' %}">
+<link rel="icon" type="image/png" sizes="192x192" href="{% static 'logo-192.png' %}">
+<link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+<style>
+    :root {
+        --primary: #11b76d;
+        --secondary: #0e9a5b;
+        --accent: #10c875;
+        --primary-fg: #ffffff;
+    }
+    #header {
+        background: #0d231b !important;
+        color: #ffffff !important;
+        border-bottom: 3px solid #11b76d !important;
+    }
+    #header a:link, #header a:visited {
+        color: #ffffff !important;
+    }
+    .module h2, .module caption, .section:first-child h2 {
+        background: #11b76d !important;
+    }
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: #11b76d !important;
+        border-color: #0e9a5b !important;
+    }
+    .button:hover, input[type=submit]:hover, input[type=button]:hover {
+        background: #0e9a5b !important;
+    }
+    .button.default, input[type=submit].default, .submit-row input.default {
+        background: #0e9a5b !important;
+    }
+    div.breadcrumbs {
+        background: #14352a !important;
+    }
+    .admin-logo-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .admin-logo-img {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        object-fit: contain;
+        box-shadow: 0 2px 8px rgba(17, 183, 109, 0.4);
+    }
+</style>
+{% include 'tenants/light_theme.html' %}
+<style>
+html,html[data-theme="dark"]{color-scheme:light;--primary:#087f4f;--secondary:#edf7f1;--body-bg:#fff;--body-fg:#173b2b;--body-quiet-color:#52675c;--body-loud-color:#173b2b;--darkened-bg:#f4faf7;--selected-bg:#e5f6ec;--selected-row:#e5f6ec;--border-color:#d5e7dc;--hairline-color:#d5e7dc;--link-fg:#087f4f;--link-hover-color:#06623d;--header-bg:#fff;--header-color:#173b2b;--header-link-color:#087f4f;--breadcrumbs-bg:#edf7f1;--breadcrumbs-fg:#173b2b;--breadcrumbs-link-fg:#087f4f}
+#header{background:#fff!important;color:#173b2b!important;border-color:#11b76d!important}#header a:link,#header a:visited{color:#087f4f!important}div.breadcrumbs{background:#edf7f1!important;color:#173b2b}.module h2,.module caption,.section:first-child h2{background:#e5f6ec!important;color:#173b2b!important}.theme-toggle{display:none}
+</style>
+{% endblock %}
+
+{% block branding %}
+<div class="admin-logo-wrapper">
+    <img src="{% static 'logo.png' %}" alt="Logo" class="admin-logo-img">
+    <h1 id="site-name"><a href="{% url 'admin:index' %}">Neoriz WhatsApp Automation</a></h1>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

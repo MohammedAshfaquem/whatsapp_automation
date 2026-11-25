@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Contacts Directory{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card">
+    <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h3 class="card-title">Contacts & Customers</h3>
+            <p class="card-subtitle">{{ total_contacts }} total records in this workspace</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% if can_manage %}
+            <a href="{% url 'crm-contact-export' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">📥 Export CSV</a>
+            <a href="{% url 'crm-contact-import' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">📤 Import CSV</a>
+            {% endif %}
+            <a href="{% url 'crm-contact-create' %}" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">+ New Contact</a>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <form method="get" action="{% url 'crm-contact-list' %}" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by name, phone, email, company..." class="form-control" style="flex: 1; min-width: 220px; padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+        
+        <select name="status" class="form-select" style="padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+            <option value="">All Lifecycle Stages</option>
+            <option value="LEAD" {% if status_filter == 'LEAD' %}selected{% endif %}>Lead</option>
+            <option value="MQL" {% if status_filter == 'MQL' %}selected{% endif %}>Marketing Qualified (MQL)</option>
+            <option value="SQL" {% if status_filter == 'SQL' %}selected{% endif %}>Sales Qualified (SQL)</option>
+            <option value="OPPORTUNITY" {% if status_filter == 'OPPORTUNITY' %}selected{% endif %}>Opportunity</option>
+            <option value="CUSTOMER" {% if status_filter == 'CUSTOMER' %}selected{% endif %}>Customer</option>
+            <option value="CHURNED" {% if status_filter == 'CHURNED' %}selected{% endif %}>Churned</option>
+            <option value="OTHER" {% if status_filter == 'OTHER' %}selected{% endif %}>Other</option>
+        </select>
+
+        <select name="owner" class="form-select" style="padding: 0.55rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.88rem;">
+            <option value="">All Owners</option>
+            {% for m in tenant_members %}
+            <option value="{{ m.user.username }}" {% if owner_filter == m.user.username %}selected{% endif %}>{{ m.user.get_full_name|default:m.user.username }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-secondary" style="padding: 0.55rem 1rem; font-size: 0.88rem;">Filter</button>
+        {% if search_query or status_filter or owner_filter %}
+        <a href="{% url 'crm-contact-list' %}" style="font-size: 0.85rem; color: #64748b; margin-left: 0.25rem;">Clear</a>
+        {% endif %}
+    </form>
+
+    <!-- Contacts Table -->
+    {% if page_obj %}
+    <div style="overflow-x: auto;">
+        <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b; font-size: 0.8rem; text-transform: uppercase;">
+                    <th style="padding: 0.75rem 0.5rem;">Contact</th>
+                    <th style="padding: 0.75rem 0.5rem;">Phone</th>
+                    <th style="padding: 0.75rem 0.5rem;">Company</th>
+                    <th style="padding: 0.75rem 0.5rem;">Lifecycle Status</th>
+                    <th style="padding: 0.75rem 0.5rem;">Tags</th>
+                    <th style="padding: 0.75rem 0.5rem;">Owner</th>
+                    <th style="padding: 0.75rem 0.5rem;">Last Activity</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contact in page_obj %}
+                <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <a href="{% url 'crm-contact-detail' contact.id %}" style="font-weight: 700; color: #1e293b;">
+                            {{ contact.name|default:"(Unnamed Contact)" }}
+                        </a>
+                        {% if contact.email %}
+                        <div style="font-size: 0.75rem; color: #64748b;">{{ contact.email }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; font-family: monospace; font-size: 0.85rem; color: #334155;">
+                        {{ contact.phone_number }}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        {% if contact.company %}
+                        <a href="{% url 'crm-company-detail' contact.company.id %}" style="color: #11b76d; font-weight: 600;">{{ contact.company.name }}</a>
+                        {% else %}
+                        <span style="color: #94a3b8;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        <span class="badge" style="
+                            padding: 3px 9px; border-radius: 12px; font-size: 0.72rem; font-weight: 700;
+                            {% if contact.lifecycle_status == 'CUSTOMER' %}background: #dcfce7; color: #15803d;
+                            {% elif contact.lifecycle_status == 'OPPORTUNITY' %}background: #e8f8f0; color: #11b76d;
+                            {% elif contact.lifecycle_status == 'SQL' %}background: #fef3c7; color: #b45309;
+                            {% elif contact.lifecycle_status == 'MQL' %}background: #eff6ff; color: #1d4ed8;
+                            {% elif contact.lifecycle_status == 'CHURNED' %}background: #fee2e2; color: #b91c1c;
+                            {% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                            {{ contact.get_lifecycle_status_display }}
+                        </span>
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem;">
+                        {% for tag in contact.tags %}
+                        <span style="display: inline-block; background: #f1f5f9; color: #475569; font-size: 0.7rem; padding: 2px 6px; border-radius: 6px; margin-right: 3px;">{{ tag }}</span>
+                        {% empty %}
+                        <span style="color: #cbd5e1;">-</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; color: #475569; font-size: 0.82rem;">
+                        {% if contact.owner %}{{ contact.owner.get_full_name|default:contact.owner.username }}{% else %}Unassigned{% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; font-size: 0.78rem; color: #64748b;">
+                        {% if contact.last_contacted_at %}
+                        {{ contact.last_contacted_at|date:"d M Y, H:i" }}
+                        {% else %}
+                        {{ contact.updated_at|date:"d M Y" }}
+                        {% endif %}
+                    </td>
+                    <td style="padding: 0.75rem 0.5rem; text-align: right;">
+                        <a href="{% url 'crm-contact-detail' contact.id %}" style="font-weight: 600; font-size: 0.8rem; color: var(--primary); margin-right: 0.5rem;">View</a>
+                        <a href="{% url 'crm-contact-edit' contact.id %}" style="font-weight: 600; font-size: 0.8rem; color: #64748b;">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+        <span style="font-size: 0.82rem; color: #64748b;">
+            Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ total_contacts }} contacts
+        </span>
+        <div style="display: flex; gap: 0.5rem;">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if owner_filter %}&owner={{ owner_filter }}{% endif %}" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Previous</a>
+            {% endif %}
+            <span style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 700; color: #1e293b;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if owner_filter %}&owner={{ owner_filter }}{% endif %}" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+        <p style="font-size: 1rem; font-weight: 600; color: #64748b;">No contacts found matching your criteria.</p>
+        <p style="font-size: 0.85rem; margin-top: 0.25rem;">Try adjusting your search filters or create a new contact.</p>
+        <a href="{% url 'crm-contact-create' %}" class="btn-primary" style="margin-top: 1rem;">+ Add Contact</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

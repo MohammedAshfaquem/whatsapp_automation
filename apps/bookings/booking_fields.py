@@ -21,7 +21,13 @@ def next_missing_step(data):
     if ((data.get('booking_for_other') and not data.get('recipient_name'))
             or (not data.get('booking_for_other') and not data.get('name'))):
         return BookingStep.NAME
-    if not Service.objects.filter(pk=data.get('service_id'), is_active=True).exists():
+    has_target = False
+    if data.get('product_id'):
+        from apps.business.models import Product
+        has_target = Product.objects.filter(pk=data['product_id'], is_active=True).exists()
+    if not has_target and data.get('service_id'):
+        has_target = Service.objects.filter(pk=data['service_id'], is_active=True).exists()
+    if not has_target:
         return BookingStep.SERVICE
     if not data.get('ac_type') or not data.get('problem_description'):
         return BookingStep.AC_DETAILS
@@ -30,6 +36,7 @@ def next_missing_step(data):
     if not BookingService.parse_schedule(f"{data.get('preferred_date', '')} {data.get('preferred_time_slot', '')}"):
         return BookingStep.SCHEDULE
     return BookingStep.REVIEW
+
 
 
 @transaction.atomic
@@ -69,19 +76,42 @@ def apply_booking_fields(session, interpretation):
             valid = valid_name(value) and (field != 'recipient_name' or data.get('booking_for_other'))
             valid = valid and not (field == 'name' and data.get('booking_for_other'))
         elif field == 'service_name':
+            from apps.business.domain import is_it_business
+            if is_it_business():
+                from apps.business.models import Product
+                prod = Product.objects.filter(name__iexact=value, is_active=True).first()
+                if not prod:
+                    prod = IntentService.find_matching_product(value.lower())
+                if prod:
+                    data.update(product_id=prod.pk, product_name=prod.name, request_type='product_demo',
+                                ac_type=f"{prod.name} Demo")
+                    data.pop('service_id', None)
+                    data.pop('service_name', None)
+                    continue
             service = Service.objects.filter(name__iexact=value, is_active=True).first()
+            if not service and is_it_business():
+                service = IntentService.find_matching_service(value.lower())
             if service:
-                data.update(service_id=service.pk, service_name=service.name)
+                data.update(service_id=service.pk, service_name=service.name, request_type='consultation',
+                            ac_type=service.name)
+                data.pop('product_id', None)
+                data.pop('product_name', None)
             else:
                 errors.append(field)
             continue
+
         elif field == 'ac_type':
-            types = {f'{kind} ac': f'{kind.title()} AC' for kind in ('window', 'split', 'inverter', 'cassette', 'tower', 'other')}
-            types['type to be confirmed'] = 'Type to be confirmed'
-            value = types.get(value.lower(), '')
-            valid = bool(value)
+            from apps.business.domain import is_it_business
+            if is_it_business():
+                valid = len(value) >= 2 and not IntentService.is_clarification(value)
+            else:
+                types = {f'{kind} ac': f'{kind.title()} AC' for kind in ('window', 'split', 'inverter', 'cassette', 'tower', 'other')}
+                types['type to be confirmed'] = 'Type to be confirmed'
+                value = types.get(value.lower(), '')
+                valid = bool(value)
         elif field == 'service_address':
-            valid = len(value) >= 12 and len(value.split()) >= 3 and '?' not in value
+            from apps.business.domain import is_it_business
+            valid = (len(value) >= 3 if is_it_business() else len(value) >= 12 and len(value.split()) >= 3) and '?' not in value
             valid = valid and not IntentService.is_clarification(value)
         elif field == 'problem_description':
             valid = len(value) >= 2 and any(c.isalpha() for c in value) and '?' not in value

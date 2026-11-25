@@ -1,0 +1,116 @@
+{% extends 'tenants/account_base.html' %}
+{% load static %}
+
+{% block title %}Activate Your Account &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block extra_head %}
+<style>
+    .activate-wrapper {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem;
+    }
+    .activate-card {
+        background: #ffffff;
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-xl);
+        padding: 2.75rem 2.25rem;
+        width: 100%;
+        max-width: 460px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+    }
+    .activate-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .activate-logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(17, 183, 109, 0.25);
+        margin-bottom: 1.25rem;
+    }
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 0.35rem;
+    }
+    .form-control {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #1e293b;
+        background: #f8fafc;
+        box-sizing: border-box;
+    }
+    .form-control:focus {
+        border-color: #11B76D;
+        outline: none;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(17, 183, 109, 0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activate-wrapper">
+    <div class="activate-card">
+        <div class="activate-header">
+            <div class="activate-logo">
+                <img src="{% static 'logo.png' %}" alt="Neoriz Mascot Logo" style="width: 100%; height: 100%; border-radius: 20px; object-fit: contain;">
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 0.35rem;">
+                Activate Your Account
+            </h1>
+            <p style="font-size: 0.88rem; color: #64748b; line-height: 1.4;">
+                Set a secure password for <strong>{{ user_obj.email }}</strong> to activate your workspace access.
+            </p>
+        </div>
+
+        {% if error_msg %}
+        <div style="background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem;">
+            {{ error_msg }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'activate-account' token=token %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="activation-password" class="form-label">New Password *</label>
+                <input id="activation-password" type="password" name="password" required class="form-control" placeholder="At least 8 characters" minlength="8" autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label for="activation-confirm" class="form-label">Confirm Password *</label>
+                <input id="activation-confirm" type="password" name="confirm_password" required class="form-control" placeholder="Re-enter your password" minlength="8" autocomplete="new-password">
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.8rem; color: #64748b;">
+                &bull; Use at least 8 characters<br>
+                &bull; This single-use link expires {{ expires_at|date:"d M Y, H:i T" }}
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 0.95rem; font-weight: 700; border-radius: 8px;">
+                Activate Account &amp; Enter Workspace &rarr;
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 1.75rem; font-size: 0.85rem; color: #64748b;">
+            Already have an active password? <a href="{% url 'login' %}" style="color: #11B76D; font-weight: 700; text-decoration: none;">Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

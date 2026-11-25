@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema
 from .models import Booking, BookingStatus
 from .serializers import BookingSerializer, BookingActionSerializer
 from .notifications import change_booking_status
+from apps.tenants.capabilities import capability_permission
 
 @extend_schema(tags=['Bookings'])
 class BookingListCreateView(generics.ListCreateAPIView):
@@ -14,7 +15,7 @@ class BookingListCreateView(generics.ListCreateAPIView):
     """
     queryset = Booking.objects.all().select_related('customer', 'service').order_by('-created_at')
     serializer_class = BookingSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser, capability_permission('bookings', 'view')]
 
 @extend_schema(tags=['Bookings'])
 class BookingDetailView(generics.RetrieveUpdateAPIView):
@@ -23,7 +24,7 @@ class BookingDetailView(generics.RetrieveUpdateAPIView):
     """
     queryset = Booking.objects.all().select_related('customer', 'service')
     serializer_class = BookingSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser, capability_permission('bookings', 'edit')]
 
 @extend_schema(
     tags=['Bookings'],
@@ -35,7 +36,7 @@ class BookingConfirmView(APIView):
     """
     Authorize shop owner to confirm a pending booking.
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser, capability_permission('bookings', 'edit')]
 
     def post(self, request, pk):
         try:
@@ -67,7 +68,7 @@ class BookingRejectView(APIView):
     """
     Authorize shop owner to reject a booking request.
     """
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser, capability_permission('bookings', 'edit')]
 
     def post(self, request, pk):
         try:

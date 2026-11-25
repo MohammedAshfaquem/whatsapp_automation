@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block page_title %}Deals Kanban Board{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <h3 class="card-title" style="margin-bottom: 0;">Sales Pipeline: {{ active_pipeline.name }}</h3>
+            </div>
+            {% if pipelines|length > 1 %}
+            <form method="get" action="{% url 'crm-deal-board' %}" style="display: inline-block;">
+                <select name="pipeline_id" onchange="this.form.submit()" class="form-select" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; border-radius: 8px;">
+                    {% for p in pipelines %}
+                    <option value="{{ p.id }}" {% if p.id == active_pipeline.id %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a href="{% url 'crm-deal-list' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">Switch to Table View ☰</a>
+            <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">+ New Deal</a>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Columns Container -->
+<div style="display: flex; gap: 1.25rem; overflow-x: auto; padding-bottom: 1.5rem; align-items: flex-start;">
+    {% for col in board_data %}
+    <div style="min-width: 290px; max-width: 310px; flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; display: flex; flex-direction: column;">
+        <!-- Column Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid {% if col.stage.is_won %}#86efac{% elif col.stage.is_lost %}#fca5a5{% else %}#cbd5e1{% endif %};">
+            <div>
+                <span style="font-size: 0.88rem; font-weight: 700; color: #1e293b;">{{ col.stage.name }}</span>
+                <span style="font-size: 0.72rem; color: #64748b; margin-left: 0.35rem;">({{ col.stage.probability }}%)</span>
+            </div>
+            <span class="badge" style="background: white; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 700; color: #475569; padding: 2px 7px; border-radius: 10px;">
+                {{ col.count }}
+            </span>
+        </div>
+
+        <!-- Total Value for Column -->
+        <div style="font-size: 0.78rem; font-weight: 700; color: #11b76d; margin-bottom: 0.85rem;">
+            Total: {{ col.total_value|floatformat:2 }}
+        </div>
+
+        <!-- Deals in Stage -->
+        <div style="display: flex; flex-direction: column; gap: 0.85rem; min-height: 200px;">
+            {% for deal in col.deals %}
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.85rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: transform 0.15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.35rem;">
+                    <a href="{% url 'crm-deal-detail' deal.id %}" style="font-size: 0.88rem; font-weight: 700; color: #1e293b; line-height: 1.3;">
+                        {{ deal.title }}
+                    </a>
+                </div>
+
+                <!-- Contact & Company -->
+                <div style="font-size: 0.78rem; color: #64748b; margin-bottom: 0.5rem;">
+                    👤 {{ deal.contact.name|default:deal.contact.phone_number }}
+                    {% if deal.company %}
+                    <br>🏢 {{ deal.company.name }}
+                    {% endif %}
+                </div>
+
+                <!-- Amount & Currency -->
+                <div style="font-size: 0.92rem; font-weight: 800; color: #0f172a; margin-bottom: 0.65rem;">
+                    {% if deal.amount %}
+                    {{ deal.currency }} {{ deal.amount|floatformat:2 }}
+                    {% else %}
+                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">Quotation-based</span>
+                    {% endif %}
+                </div>
+
+                <!-- Next Activity Status -->
+                {% with next_act=deal.next_activity %}
+                {% if next_act %}
+                <div style="font-size: 0.72rem; padding: 3px 6px; border-radius: 6px; margin-bottom: 0.65rem; {% if next_act.is_overdue %}background: #fee2e2; color: #b91c1c; font-weight: 700;{% else %}background: #eff6ff; color: #1d4ed8;{% endif %}">
+                    ⏱ {{ next_act.title }} ({{ next_act.due_date|date:"d M" }})
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <!-- Quick Stage Move Dropdown -->
+                <form method="post" action="{% url 'crm-deal-move-stage' deal.id %}" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.35rem; align-items: center;">
+                        <select name="stage_id" class="form-select" style="flex: 1; padding: 0.25rem 0.4rem; font-size: 0.72rem; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            {% for stg in all_stages %}
+                            <option value="{{ stg.id }}" {% if stg.id == deal.stage_id %}selected{% endif %}>{{ stg.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.72rem;">Move</button>
+                    </div>
+                </form>
+            </div>
+            {% empty %}
+            <div style="border: 2px dashed #cbd5e1; border-radius: 10px; padding: 2rem 1rem; text-align: center; color: #94a3b8; font-size: 0.78rem;">
+                No deals in this stage
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

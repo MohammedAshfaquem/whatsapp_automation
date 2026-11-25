@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{% if is_new %}Create Contact{% else %}Edit Contact - {{ contact.name|default:contact.phone_number }}{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">{% if is_new %}Create New Contact{% else %}Edit Contact Profile{% endif %}</h3>
+            <p class="card-subtitle">Manage customer profile, contact details, tags, and lifecycle ownership</p>
+        </div>
+        <a href="{% if is_new %}{% url 'crm-contact-list' %}{% else %}{% url 'crm-contact-detail' contact.id %}{% endif %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">Cancel</a>
+    </div>
+
+    <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert-box alert-error" style="margin-bottom: 1.5rem;">
+            <div>
+                <strong>Please correct the following errors:</strong>
+                <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                    {% for field, errors in form.errors.items %}
+                    <li>{{ field }}: {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Full Name</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Phone Number (WhatsApp) *</label>
+                {{ form.phone_number }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Email Address</label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Company / Organization</label>
+                {{ form.company }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Lifecycle Status</label>
+                {{ form.lifecycle_status }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Lead Source</label>
+                {{ form.source }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Assigned Contact Owner</label>
+                {{ form.owner }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Tags (comma-separated)</label>
+                {{ form.tags_string }}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.75rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Internal Notes</label>
+            {{ form.notes }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 1.25rem;">
+            <a href="{% if is_new %}{% url 'crm-contact-list' %}{% else %}{% url 'crm-contact-detail' contact.id %}{% endif %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">{% if is_new %}Create Contact{% else %}Save Changes{% endif %}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

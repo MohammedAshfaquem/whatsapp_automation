@@ -1,0 +1,305 @@
+@charset "UTF-8";
+
+@tailwind base;
+@tailwind components;
+
+:root {
+  color-scheme: light;
+  --brand-green: #11b76d;
+  --primary: #087f4f;
+  --primary-hover: #06623d;
+  --primary-light: #e5f6ec;
+  --primary-border: #b6dfc8;
+  --bg-app: #f4faf7;
+  --bg-dark: var(--bg-app);
+  --bg-card: #ffffff;
+  --bg-card-hover: #edf7f1;
+  --border: #d5e7dc;
+  --border-subtle: #bfd7c9;
+  --text-main: #173b2b;
+  --text-muted: #52675c;
+  --text-dim: #60786a;
+  --danger: #b42318;
+  --warning: #8a5700;
+  --info: #087f4f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Base Utility Classes */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+.btn-secondary {
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--border-subtle);
+}
+.btn-danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+}
+.btn-danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.25);
+}
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  line-height: 1;
+}
+.badge-green {
+  background-color: rgba(17, 183, 109, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(17, 183, 109, 0.3);
+}
+.badge-blue {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.badge-amber {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.badge-red {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.badge-gray {
+  background-color: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.input-field {
+  width: 100%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  color: var(--text-main);
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease;
+  outline: none;
+}
+.input-field:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(17, 183, 109, 0.2);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+table.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+table.custom-table th {
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+table.custom-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+}
+table.custom-table tr:last-child td {
+  border-bottom: none;
+}
+table.custom-table tr:hover td {
+  background-color: var(--bg-card-hover);
+}
+
+/* Modal Overlay */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 50, 32, 0.30);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+.modal-box {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  width: 100%;
+  max-width: 32rem;
+  box-shadow: 0 25px 60px -12px rgba(15, 58, 38, 0.18);
+  overflow: hidden;
+}
+
+/* Kanban Board Styling */
+.kanban-board {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  min-height: calc(100vh - 15rem);
+}
+.kanban-column {
+  flex: 0 0 19rem;
+  background-color: var(--bg-card-hover);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+.kanban-header {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kanban-list {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1;
+  overflow-y: auto;
+}
+.deal-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.875rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.deal-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+/* The utility-styled CRM panel needs local control defaults. Global Tailwind
+   preflight stays disabled so the rest of the workspace retains its styles. */
+.customer-context-panel,
+.customer-context-panel :where(*) {
+  border-style: solid;
+  border-width: 0;
+}
+.customer-context-panel :where(button, input, select, textarea) {
+  font-family: inherit;
+  line-height: inherit;
+}
+.customer-context-panel :where(button) {
+  background-color: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.customer-context-panel :where(button:disabled) {
+  cursor: not-allowed;
+}
+@tailwind utilities;
+
+/* Shared light controls also cover forms that previously relied on browser defaults. */
+.form-input, .input-field, .input, .form-select,
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], input[type="search"], input[type="url"],
+input[type="datetime-local"], select, textarea {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 42px;
+  border: 1px solid var(--border-subtle); border-radius: 8px;
+  background-color: var(--bg-card); color: var(--text-main);
+  padding: .65rem .85rem; font: inherit; font-size: .875rem;
+}
+input::placeholder, textarea::placeholder { color: var(--text-dim); opacity: 1; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+input[readonly], input:disabled, select:disabled, textarea:disabled { background-color: var(--bg-card-hover); }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--primary); }
+select option { background: var(--bg-card); color: var(--text-main); }
+.account-profile form label { display: grid; gap: .45rem; font-size: .875rem; font-weight: 600; }
+.account-profile form { width: 100%; }
+.workspace-sidebar { background: var(--bg-card); }
+.workspace-sidebar summary:hover, .workspace-sidebar button:hover { background-color: var(--bg-card-hover); }
+.workspace-sidebar button[aria-current="page"] { box-shadow: inset 3px 0 var(--primary); font-weight: 700; }
+.workspace-header { background: var(--bg-card); }
+::selection { background: #b9e9ce; color: #143b29; }

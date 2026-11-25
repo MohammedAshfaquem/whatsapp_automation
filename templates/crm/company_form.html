@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{% if is_new %}Create Company{% else %}Edit Company - {{ form.instance.name }}{% endif %}{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card" style="max-width: 750px; margin: 0 auto;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">{% if is_new %}Create Company Profile{% else %}Edit Company Profile{% endif %}</h3>
+            <p class="card-subtitle">Organization details, industry, domain, and address</p>
+        </div>
+        <a href="{% url 'crm-company-list' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">Cancel</a>
+    </div>
+
+    <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert-box alert-error">
+            <div>
+                <strong>Please correct errors:</strong>
+                <ul style="margin-top: 0.5rem; margin-left: 1.25rem;">
+                    {% for field, errors in form.errors.items %}
+                    <li>{{ field }}: {{ errors|join:", " }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Company Name *</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Domain / Website</label>
+                {{ form.domain }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Industry</label>
+                {{ form.industry }}
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Phone Number</label>
+                {{ form.phone }}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Website URL</label>
+            {{ form.website }}
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Office / Billing Address</label>
+            {{ form.address }}
+        </div>
+
+        <div style="margin-bottom: 1.75rem;">
+            <label style="display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem;">Description / Business Scope</label>
+            {{ form.description }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid #f1f5f9; padding-top: 1.25rem;">
+            <a href="{% url 'crm-company-list' %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-primary">Save Company</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

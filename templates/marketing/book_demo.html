@@ -1,0 +1,72 @@
+{% extends "marketing/base_marketing.html" %}
+
+{% block title %}Book a Demonstration Walkthrough — Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4rem 0;">
+    <div class="container" style="max-width: 680px;">
+        <div style="text-align: center; margin-bottom: 2.5rem;">
+            <div style="color: var(--brand-green); font-weight: 800; font-size: 0.88rem; text-transform: uppercase; margin-bottom: 0.5rem;">Personalized Walkthrough</div>
+            <h1 style="font-size: 2.4rem; font-weight: 900; color: var(--text-heading); margin-bottom: 0.75rem;">See Neoriz WhatsApp Automation in Action</h1>
+            <p style="font-size: 1rem; color: var(--text-muted);">Speak with our solutions team at Neoriz Solutions. We'll demonstrate multi-agent shared inbox, deal pipelines, and AI conversational routing tailored to your business.</p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-md);">
+            <form method="post" action="{% url 'marketing-book-demo' %}">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Your Full Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div style="color: #e11d48; font-size: 0.8rem; margin-top: 3px;">{{ form.name.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Work Email *</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<div style="color: #e11d48; font-size: 0.8rem; margin-top: 3px;">{{ form.email.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Phone Number (with country code) *</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}<div style="color: #e11d48; font-size: 0.8rem; margin-top: 3px;">{{ form.phone.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div>
+                        <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Company / Business Name *</label>
+                        {{ form.company_name }}
+                        {% if form.company_name.errors %}<div style="color: #e11d48; font-size: 0.8rem; margin-top: 3px;">{{ form.company_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Sales / Support Team Size</label>
+                        {{ form.team_size }}
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.25rem;">
+                    <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Primary Focus Area</label>
+                    {{ form.primary_interest }}
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Current Inquiry Volume or Requirements (Optional)</label>
+                    {{ form.notes }}
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1rem;">
+                    Submit Demo Request &rarr;
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

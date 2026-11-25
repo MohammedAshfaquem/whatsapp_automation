@@ -1,0 +1,80 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Security Audit Log — Platform Administration{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-heading);">Platform Security Audit Log</h1>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+            Immutable activity stream recording authentication events, capability changes, bulk migrations, and inspection sessions.
+        </p>
+    </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th style="width: 18%;">Timestamp (UTC)</th>
+                <th style="width: 15%;">Actor</th>
+                <th style="width: 18%;">Action</th>
+                <th style="width: 15%;">Workspace</th>
+                <th style="width: 24%;">Summary & Details</th>
+                <th style="width: 10%;">IP Address</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td style="font-size: 0.8rem; font-family: monospace; color: var(--text-muted);">
+                    {{ log.created_at|date:"Y-m-d H:i:s" }}
+                </td>
+                <td>
+                    {% if log.actor %}
+                    <strong>{{ log.actor.username }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ log.actor.email }}</div>
+                    {% else %}
+                    <span style="color: var(--text-muted); font-style: italic;">System Event</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge 
+                        {% if 'FAILED' in log.action or 'BLOCKED' in log.action or 'DENIED' in log.action or 'EXCEEDED' in log.action %}badge-red
+                        {% elif 'CHANGED' in log.action or 'ASSIGNED' in log.action %}badge-yellow
+                        {% elif 'INSPECTED' in log.action %}badge-purple
+                        {% else %}badge-blue{% endif %}">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td>
+                    {% if log.tenant %}
+                    <strong>{{ log.tenant.name }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ log.tenant.slug }}</div>
+                    {% else %}
+                    <span style="color: var(--text-muted); font-size: 0.8rem;">Platform Scope</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="font-weight: 600; color: var(--text-heading); font-size: 0.85rem;">{{ log.summary }}</div>
+                    {% if log.details %}
+                    <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-top: 3px;">
+                        {{ log.details }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.8rem; font-family: monospace; color: var(--text-muted);">
+                    {{ log.ip_address|default:"—" }}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                    No audit log records available.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -9,7 +9,7 @@ venv/
 .venv/
 ENV/
 
-# Django
+# Django & Runtime Storage
 *.log
 local_settings.py
 db.sqlite3
@@ -18,10 +18,25 @@ db.sqlite3-journal
 .backups/
 .deployment-secrets/
 media/
+platform_support/
+inbox_media/
 staticfiles/
 
 # ChromaDB
 chroma_data/
+
+# Frontend & Build Outputs
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/coverage/
+static/dist/
+
+# Archives & Agent Run Artifacts
+artifacts/
+*.tar.gz
+*.bak
+*.orig
 
 # Environment variables
 .env
@@ -33,7 +48,9 @@ chroma_data/
 .coverage
 htmlcov/
 
-# IDEs
+# OS & IDEs
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 *.swp

@@ -1,0 +1,3 @@
+{% extends 'tenants/account_base.html' %}
+{% block title %}Account Ready — Neoriz{% endblock %}
+{% block content %}<section style="max-width:480px;margin:8vh auto;background:white;padding:32px;border-radius:16px"><h1>Client account activated</h1><p>The password for {{ user_obj.email }} has been set. Your current signed-in session has been preserved.</p><p>The client can now sign in using their username <strong>{{ user_obj.username }}</strong> and the password they chose.</p><a class="btn btn-primary" href="/app/">Return to my account</a></section>{% endblock %}

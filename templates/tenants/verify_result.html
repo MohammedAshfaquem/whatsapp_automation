@@ -1,0 +1,51 @@
+{% extends "tenants/account_base.html" %}
+
+{% block title %}Email Verification &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4rem 1rem;">
+    <div style="max-width: 560px; margin: 0 auto; text-align: center;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 3rem 2rem; box-shadow: 0 10px 35px rgba(0,0,0,0.06);">
+            {% if is_valid %}
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem;">
+                &#10003;
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Email Verified!</h1>
+            {% if is_recovery %}
+                <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 2rem;">
+                    Your recovery email address (<strong>{{ user_email }}</strong>) is now verified for account recovery notifications.
+                </p>
+                <a href="/app/account" class="btn btn-primary" style="padding: 0.8rem 2rem;">Return to Account Settings &rarr;</a>
+            {% elif next_step == 'awaiting_approval' %}
+                <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
+                    Thank you! <strong>{{ user_email }}</strong> is verified. Your registration for <strong>{{ onboarding.business_name }}</strong> is now <strong>awaiting platform approval &amp; plan assignment</strong>.
+                </p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1.75rem; font-size: 0.85rem; color: #475569;">
+                    Once approved by our team, you will receive a separate password setup email to activate access.
+                </div>
+                <a href="{% url 'access-pending' %}" class="btn btn-primary" style="padding: 0.8rem 2rem;">View Onboarding Status</a>
+            {% elif next_step == 'password_setup_emailed' %}
+                <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 2rem;">
+                    <strong>{{ user_email }}</strong> is verified and your workspace is approved! We have emailed you a separate single-use link to set your password and activate access.
+                </p>
+                <a href="{% url 'login' %}" class="btn btn-primary" style="padding: 0.8rem 2rem;">Go to Workspace Sign In &rarr;</a>
+            {% else %}
+                <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 2rem;">
+                    Your email address (<strong>{{ user_email }}</strong>) has been verified. You can now sign in to your workspace.
+                </p>
+                <a href="{% url 'login' %}" class="btn btn-primary" style="padding: 0.8rem 2rem;">Sign In to Workspace &rarr;</a>
+            {% endif %}
+            {% else %}
+            <div style="width: 60px; height: 60px; border-radius: 50%; background: #fff1f2; color: #e11d48; display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.5rem;">
+                &#10005;
+            </div>
+            <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">Verification Link Expired or Invalid</h1>
+            <p style="font-size: 0.95rem; color: #475569; line-height: 1.6; margin-bottom: 2rem;">
+                {{ error_message|default:"This email verification link has expired, was superseded, or has already been used. Please request a fresh verification link." }}
+            </p>
+            <a href="{% url 'resend-verification' %}" class="btn btn-primary" style="padding: 0.8rem 2rem;">Request New Verification Link</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

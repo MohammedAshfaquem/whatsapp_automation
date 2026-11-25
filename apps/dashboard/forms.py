@@ -77,7 +77,7 @@ class ServiceForm(forms.ModelForm):
             'description': forms.Textarea(attrs={
                 'class': 'form-textarea',
                 'rows': 3,
-                'placeholder': 'Describe what is included in this AC service...',
+                'placeholder': 'Describe what is included in this service...',
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-checkbox',
@@ -187,3 +187,63 @@ class StaffUserCreationForm(forms.Form):
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError("A user with this username already exists.")
         return username
+
+
+class TenantInviteForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'colleague@example.com',
+            'required': 'required',
+        })
+    )
+    role = forms.ChoiceField(
+        choices=[
+            ('ADMIN', 'Tenant Administrator'),
+            ('STAFF', 'Tenant Staff'),
+        ],
+        initial='STAFF',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+
+class PlatformTenantCreateForm(forms.Form):
+    name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'e.g. Apex Tech Solutions',
+            'required': 'required',
+        })
+    )
+    plan = forms.ChoiceField(
+        choices=[
+            ('STARTER', 'Starter Plan'),
+            ('PRO', 'Professional Plan'),
+            ('ENTERPRISE', 'Enterprise Plan'),
+        ],
+        initial='STARTER',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    owner_username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'apexadmin',
+            'required': 'required',
+        })
+    )
+    owner_email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'admin@apextech.com',
+            'required': 'required',
+        })
+    )
+    owner_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-input',
+            'placeholder': 'Secure temporary password',
+            'required': 'required',
+        })
+    )

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block page_title %}CRM Pipeline Settings{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Sales Pipelines & Stages Configuration</h3>
+            <p class="card-subtitle">Manage customer journey stages and deal conversion probabilities for {{ tenant.name }}</p>
+        </div>
+        {% if user.is_staff or user.is_superuser %}
+        <a href="/app/deals" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">Open Deals Pipeline</a>
+        {% endif %}
+    </div>
+
+    {% for pipe in pipelines %}
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h4 style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">
+                    {{ pipe.name }}
+                    {% if pipe.is_default %}
+                    <span class="badge" style="background: #e8f8f0; color: #11b76d; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; margin-left: 0.5rem;">Default Pipeline</span>
+                    {% endif %}
+                </h4>
+                <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">{{ pipe.description|default:"Standard sales progression" }}</p>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 600; color: #475569;">{{ pipe.stages.count }} configured stages</span>
+        </div>
+
+        <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+            <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
+                    <tr style="text-align: left; color: #475569; font-size: 0.78rem;">
+                        <th style="padding: 0.6rem 0.75rem; width: 60px;">Order</th>
+                        <th style="padding: 0.6rem 0.75rem;">Stage Name</th>
+                        <th style="padding: 0.6rem 0.75rem; text-align: center;">Win Probability</th>
+                        <th style="padding: 0.6rem 0.75rem; text-align: center;">Outcome State</th>
+                        <th style="padding: 0.6rem 0.75rem; text-align: right;">Active Deals</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for st in pipe.stages.all %}
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 0.65rem 0.75rem; font-weight: 700; color: #64748b;">
+                            {{ st.order }}
+                        </td>
+                        <td style="padding: 0.65rem 0.75rem; font-weight: 600; color: #1e293b;">
+                            {{ st.name }}
+                        </td>
+                        <td style="padding: 0.65rem 0.75rem; text-align: center; font-weight: 700; color: #11b76d;">
+                            {{ st.probability }}%
+                        </td>
+                        <td style="padding: 0.65rem 0.75rem; text-align: center;">
+                            {% if st.is_won %}
+                            <span class="badge" style="background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">Won (Closed)</span>
+                            {% elif st.is_lost %}
+                            <span class="badge" style="background: #fee2e2; color: #b91c1c; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem; font-weight: 700;">Lost (Closed)</span>
+                            {% else %}
+                            <span style="color: #64748b; font-size: 0.78rem;">In Progress</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.65rem 0.75rem; text-align: right; font-weight: 700; color: #0f172a;">
+                            {{ st.deals.count }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% empty %}
+    <p style="text-align: center; color: #94a3b8; padding: 2rem;">No pipelines found.</p>
+    {% endfor %}
+</div>
+{% endblock %}

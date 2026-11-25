@@ -1,0 +1,114 @@
+{% extends "marketing/base_marketing.html" %}
+{% load static %}
+
+{% block title %}Register Workspace &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4.5rem 0; min-height: 82vh;">
+    <div class="container" style="max-width: 660px;">
+        <div style="text-align: center; margin-bottom: 2.25rem;">
+            <div style="color: var(--brand-green); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+                Client Registration &bull; Verification &amp; Approval Required
+            </div>
+            <h1 style="font-size: 2.2rem; font-weight: 900; color: var(--text-heading); margin-bottom: 0.75rem; letter-spacing: -0.02em;">
+                Register Your Business Workspace
+            </h1>
+            <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6;">
+                Verify your business email, get platform plan approval, set your own password securely, and connect your Meta WhatsApp Business API credentials.
+            </p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-md);">
+            <form method="post" action="{% url 'request-access' %}" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; padding: 0.85rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.15rem;">
+                    <div>
+                        <label for="{{ form.business_name.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Business Name *</label>
+                        {{ form.business_name }}
+                        {% if form.business_name.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.business_name.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.owner_full_name.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Owner / Admin Full Name *</label>
+                        {{ form.owner_full_name }}
+                        {% if form.owner_full_name.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.owner_full_name.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.15rem;">
+                    <div>
+                        <label for="{{ form.owner_email.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Owner Work Email *</label>
+                        {{ form.owner_email }}
+                        {% if form.owner_email.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.owner_email.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.desired_username.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Desired Username *</label>
+                        {{ form.desired_username }}
+                        {% if form.desired_username.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.desired_username.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.15rem;">
+                    <div>
+                        <label for="{{ form.whatsapp_number.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">WhatsApp Business Number (Optional)</label>
+                        {{ form.whatsapp_number }}
+                        {% if form.whatsapp_number.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.whatsapp_number.errors|join:", " }}</div>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.requested_plan.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Requested Subscription Plan</label>
+                        {{ form.requested_plan }}
+                        {% if form.requested_plan.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.requested_plan.errors|join:", " }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.15rem;">
+                    <label for="{{ form.notes.id_for_label }}" style="display: block; font-size: 0.86rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.35rem;">Workspace Notes (Optional)</label>
+                    {{ form.notes }}
+                </div>
+
+                <div style="margin-bottom: 0.85rem;">
+                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.86rem; color: var(--text-heading); cursor: pointer;">
+                        {{ form.terms_accepted }}
+                        <span>I accept the <a href="{% url 'marketing-terms' %}" target="_blank" rel="noopener" style="color: var(--brand-green); font-weight: 700;">Terms of Service</a> and <a href="{% url 'marketing-privacy' %}" target="_blank" rel="noopener" style="color: var(--brand-green); font-weight: 700;">Privacy Policy</a>. *</span>
+                    </label>
+                    {% if form.terms_accepted.errors %}<div style="color:#be123c;font-size:0.8rem;margin-top:0.25rem;">{{ form.terms_accepted.errors|join:", " }}</div>{% endif %}
+                </div>
+
+                <div style="margin-bottom: 1.35rem;">
+                    <label style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.84rem; color: var(--text-muted); cursor: pointer;">
+                        {{ form.marketing_consent }}
+                        <span>Optional: Send me Neoriz product updates and WhatsApp Cloud onboarding tips.</span>
+                    </label>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #475569; line-height: 1.5;">
+                    <strong style="color: #0f172a;">How Activation Works:</strong>
+                    <ol style="margin: 0.45rem 0 0 1.25rem; padding: 0;">
+                        <li>We email you a 30-minute verification link (no password is created yet).</li>
+                        <li>Our platform administrator reviews and approves your business &amp; plan assignment.</li>
+                        <li>Once verified &amp; approved, you receive a single-use link to set your own password.</li>
+                    </ol>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-size: 1rem; font-weight: 700;">
+                    Continue &amp; Verify Email &rarr;
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 1.5rem; font-size: 0.88rem; color: var(--text-muted);">
+                Already have an active workspace? <a href="{% url 'login' %}" style="color: var(--brand-green); font-weight: 700; text-decoration: none;">Sign In</a>
+            </div>
+        </div>
+    </div>
+</section>
+<style>
+.form-input { width: 100%; padding: 0.72rem 0.95rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.92rem; color: #0f172a; background: #fff; box-sizing: border-box; }
+.form-input:focus { border-color: #11B76D; outline: none; box-shadow: 0 0 0 3px rgba(17, 183, 109, 0.14); }
+</style>
+{% endblock %}

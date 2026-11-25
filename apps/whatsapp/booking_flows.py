@@ -57,6 +57,9 @@ def build_offer(conversation):
         step__in=(BookingStep.ADDRESS, BookingStep.SCHEDULE)).first()
     if not session:
         return None
+    from apps.business.domain import is_it_business
+    if is_it_business() and session.step == BookingStep.ADDRESS:
+        return None
     claims = {'customer': conversation.customer_id, 'conversation': conversation.pk, 'session': session.pk,
               'step': session.step, 'revision': draft_revision(session)}
     today = timezone.localdate()

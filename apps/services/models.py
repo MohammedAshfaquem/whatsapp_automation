@@ -10,10 +10,11 @@ class PriceType(models.TextChoices):
 
 class Service(models.Model):
     """
-    AC Service model - PostgreSQL source of truth for services and pricing.
+    Service model - PostgreSQL source of truth for services and pricing.
     """
-    name = models.CharField(max_length=150, unique=True, help_text="e.g. AC general servicing")
-    slug = models.SlugField(max_length=160, unique=True, blank=True)
+    tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, related_name='services', null=True, blank=True)
+    name = models.CharField(max_length=150, help_text="e.g. Website Development, General Servicing")
+    slug = models.SlugField(max_length=160, blank=True)
     description = models.TextField(blank=True, default="", help_text="Detailed explanation of what the service includes")
     category = models.CharField(max_length=100, default="Maintenance", help_text="e.g. Maintenance, Repair, Installation")
     
@@ -55,8 +56,9 @@ class Service(models.Model):
 
     class Meta:
         ordering = ['id']
-        verbose_name = "AC Service"
-        verbose_name_plural = "AC Services"
+        verbose_name = "Service"
+        verbose_name_plural = "Services"
+        unique_together = (('tenant', 'name'), ('tenant', 'slug'))
 
     def __str__(self):
         return f"{self.name} ({self.formatted_price})"
@@ -107,6 +109,9 @@ class Service(models.Model):
     def formatted_price(self) -> str:
         symbol = "₹" if self.currency == "INR" else f"{self.currency} "
         if self.price_type == PriceType.INSPECTION_REQUIRED:
+            from apps.business.domain import is_it_business
+            if is_it_business():
+                return 'Quote after requirements review'
             return "Inspection required"
         elif self.price_type == PriceType.STARTING_FROM:
             return f"{symbol}{self.price_amount:,.0f} onwards"

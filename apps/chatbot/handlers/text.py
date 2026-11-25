@@ -57,7 +57,8 @@ def get_customer_account_summary(customer: Customer) -> str:
 
 
 def build_contextual_prompt(customer_message, conversation, retrieved_context='No additional reference documents.', booking_context=None):
-    services_context = get_services_formatted_text()
+    tenant = getattr(conversation, 'tenant', None)
+    services_context = get_services_formatted_text(tenant=tenant)
     if conversation.service:
         svc = conversation.service
         services_context = (
@@ -65,12 +66,18 @@ def build_contextual_prompt(customer_message, conversation, retrieved_context='N
             f"Service Contact Number: {svc.contact_number}\nPrice: {svc.formatted_price}\n"
             f"Duration: {svc.estimated_duration}\nDescription: {svc.description}\n\n"
             f"ALL OTHER SERVICES FOR REFERENCE:\n{services_context}")
+    from apps.business.domain import is_it_business
+    if is_it_business():
+        from .it_services import get_products_summary
+        prod_summary = get_products_summary(tenant=tenant)
+        if prod_summary:
+            services_context += f"\n\n[VERIFIED PRODUCTS & PRICING]\n{prod_summary}"
     context = ConversationMemory.context(conversation)
     if booking_context is not None:
         context['booking_context'] = booking_context
     return build_rag_prompt(
         customer_message=customer_message,
-        business_summary=f'Server local date/time: {timezone.localtime().isoformat()}\n' + get_business_summary(),
+        business_summary=f'Server local date/time: {timezone.localtime().isoformat()}\n' + get_business_summary(tenant=tenant),
         active_services_text=services_context,
         retrieved_knowledge_text=retrieved_context,
         customer_name=conversation.customer.name,
@@ -78,28 +85,29 @@ def build_contextual_prompt(customer_message, conversation, retrieved_context='N
         **context)
 
 
+
 def generate_reply(customer_message: str, conversation: Conversation) -> str:
     """
     RAG pipeline:
     1. Always pull latest active services & prices from PostgreSQL (ensuring zero price latency).
     2. Pull verified customer account data (appointments/bookings) tied strictly to their phone.
-    3. Semantic retrieval from ChromaDB for FAQs and policies.
+    3. Semantic retrieval from ChromaDB for FAQs and policies scoped to tenant.
     4. Multi-turn recent conversation history.
     5. Gemini LLM generation.
     6. Deterministic fallback if Gemini is unconfigured or fails.
     """
-    # Always get latest PostgreSQL ground truth
-    active_services_text = get_services_formatted_text()
+    tenant = getattr(conversation, 'tenant', None)
+    active_services_text = get_services_formatted_text(tenant=tenant)
 
     intent, entity = IntentService.detect_intent(customer_message)
-    # Business facts are deterministic. Use the LLM for open-ended AC questions only.
+    # Business facts are deterministic. Use the LLM for open-ended questions only.
     if intent != IntentType.UNKNOWN:
         return generate_deterministic_reply(intent, entity, active_services_text, conversation, customer_message)
     # If Gemini is configured, run RAG pipeline
     if GeminiChatService.is_configured():
         try:
-            # Semantic search in ChromaDB
-            retrieved_chunks = retrieve_relevant_knowledge(customer_message, n_results=3)
+            # Semantic search in ChromaDB scoped to tenant
+            retrieved_chunks = retrieve_relevant_knowledge(customer_message, n_results=3, tenant=tenant)
             retrieved_context_text = format_retrieved_context(retrieved_chunks)
 
             rag_prompt = build_contextual_prompt(customer_message, conversation, retrieved_context_text)
@@ -151,6 +159,13 @@ def generate_deterministic_reply(
     Supports natural Malayalam and Manglish replies if detected.
     """
     profile = BusinessProfile.get_active()
+    from apps.business.domain import is_it_business
+    if is_it_business():
+        from .it_services import business_reply
+        it_reply = business_reply(intent, matched_entity, active_services_text, conversation, profile, customer_message=customer_message)
+        if it_reply is not None:
+            return it_reply
+
     shop_name = profile.shop_name if profile else "our AC service desk"
     cust_name = conversation.customer.name if (conversation and conversation.customer and conversation.customer.name) else None
     greeting_salutation = f"Hello {cust_name}!" if cust_name else "Hello!"
@@ -222,7 +237,7 @@ def generate_deterministic_reply(
         else:
             prefix = f"Hi {cust_name}, here" if cust_name else "Here"
             return (
-                f"{prefix} is our current pricing for AC services:\n\n"
+                f"{prefix} is our current pricing for our services:\n\n"
                 f"{active_services_text}\n\n"
                 f"Which service are you interested in?"
             )
@@ -237,21 +252,21 @@ def generate_deterministic_reply(
     elif intent == IntentType.SERVICE_AREAS:
         if profile and profile.service_areas:
             return (
-                f"We provide doorstep AC servicing in the following areas:\n"
+                f"We provide services across the following areas:\n"
                 f"{profile.service_areas}\n\n"
-                f"Please share your address if you would like to book a doorstep visit!"
+                f"Please share your requirements or location to get started!"
             )
-        return "Our team will confirm coverage for your area. Please share your locality or PIN code."
+        return "Our team will confirm coverage for your area. Please share your locality or requirements."
 
     elif intent == IntentType.SHOP_LOCATION:
         if profile:
             maps_info = f"\nGoogle Maps: {profile.google_maps_url}" if profile.google_maps_url else ""
             return (
-                f"Our shop address is:\n{profile.address}\n"
+                f"Our office address is:\n{profile.address}\n"
                 f"Phone: {profile.contact_phone}{maps_info}\n\n"
-                f"We also offer doorstep home service across all our service areas!"
+                f"We also provide consultations and support remotely or on-site!"
             )
-        return "Please contact our shop phone for exact location directions."
+        return "Please contact our office phone for exact location directions."
 
     elif intent == IntentType.PAYMENT_METHODS:
         if profile and profile.accepted_payment_methods:

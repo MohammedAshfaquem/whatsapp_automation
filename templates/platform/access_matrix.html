@@ -1,0 +1,186 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Plans & Access Matrix — Platform Administration{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-heading);">Subscription Plans & Capability Access Matrix</h1>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">Configure module bundles per plan tier and bulk assign plans to tenant workspaces with impact previews.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('copyBundleModal').style.display='block'">
+            Copy Bundle
+        </button>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('bulkAssignModal').style.display='block'">
+            Bulk Assign Plan &rarr;
+        </button>
+    </div>
+</div>
+
+<!-- Access Matrix Table -->
+<div class="card" style="padding: 0; overflow-x: auto;">
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th style="min-width: 240px;">Capability / Module</th>
+                <th style="min-width: 140px;">Scope & Category</th>
+                {% for plan in plans %}
+                <th style="text-align: center; min-width: 130px;">
+                    <div>{{ plan.name }}</div>
+                    <div style="font-size: 0.7rem; font-weight: 400; text-transform: none; color: var(--text-muted);">
+                        Seats: {{ plan.max_staff }} | Contacts: {{ plan.max_contacts }}
+                    </div>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in matrix_rows %}
+            <tr>
+                <td>
+                    <strong>{{ row.capability.name }}</strong>
+                    {% if row.required_module %}
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Module: <code>{{ row.required_module }}</code></div>
+                    {% else %}
+                    <div style="font-size: 0.75rem; color: #047857;">Core Workspace Feature</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-blue">{{ row.capability.category }}</span>
+                </td>
+                {% for plan in plans %}
+                <td style="text-align: center;">
+                    {% with has_access=row.plan_access|dictsort:0 %}
+                    {# Check dictionary key for plan.code #}
+                    {% if row.required_module %}
+                        {% if row.required_module in plan.enabled_modules %}
+                        <span style="color: #047857; font-weight: 800; font-size: 1.1rem;">✓</span>
+                        {% else %}
+                        <span style="color: #cbd5e1; font-size: 1.1rem;">—</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color: #047857; font-weight: 800; font-size: 1.1rem;">✓</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Plan Bundle Editor Cards -->
+<div style="margin-top: 2rem;">
+    <h2 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1rem;">Edit Plan Module Bundles</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        {% for plan in plans %}
+        <div class="card">
+            <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; justify-content: space-between;">
+                <span>{{ plan.name }} Bundle</span>
+                <span class="badge badge-blue">{{ plan.code }}</span>
+            </h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Max Seats: {{ plan.max_staff }} | Contacts: {{ plan.max_contacts }} | Monthly Msg: {{ plan.monthly_message_allowance }}
+            </p>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_plan_bundle">
+                <input type="hidden" name="plan_code" value="{{ plan.code }}">
+
+                <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.85rem;">
+                    {% for cap in capabilities %}
+                    {% if cap.required_module %}
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;">
+                        <input type="checkbox" name="modules" value="{{ cap.required_module }}" 
+                               {% if cap.required_module in plan.enabled_modules %}checked{% endif %}>
+                        <span>{{ cap.name }}</span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.5rem;">Save {{ plan.name }} Bundle</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal: Copy Bundle -->
+<div id="copyBundleModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: 12px; padding: 2rem; max-width: 480px; width: 90%; margin: 10vh auto;">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1rem;">Copy Capability Bundle</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="copy_plan_bundle">
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Source Plan (Copy From):</label>
+                <select name="source_plan" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-dark); border-radius: 6px;">
+                    {% for p in plans %}
+                    <option value="{{ p.code }}">{{ p.name }} ({{ p.enabled_modules|length }} modules)</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Target Plan (Overwrite):</label>
+                <select name="target_plan" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-dark); border-radius: 6px;">
+                    {% for p in plans %}
+                    <option value="{{ p.code }}">{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('copyBundleModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Copy & Overwrite</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Bulk Assign Plan -->
+<div id="bulkAssignModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: #ffffff; border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; margin: 8vh auto;">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Bulk Assign Subscription Plan</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Select target workspaces and the plan tier to apply. You will see an impact preview before changes are finalized.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="bulk_assign_plan">
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Target Plan Tier:</label>
+                <select name="target_plan_code" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-dark); border-radius: 6px;">
+                    {% for p in plans %}
+                    <option value="{{ p.code }}">{{ p.name }} (Seats: {{ p.max_staff }}, Contacts: {{ p.max_contacts }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 4px;">Select Workspaces:</label>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem;">
+                    {% for t in all_tenants %}
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; cursor: pointer;">
+                        <input type="checkbox" name="tenant_ids" value="{{ t.id }}">
+                        <span><strong>{{ t.name }}</strong> (Current: {{ t.subscription.effective_plan.name|default:t.plan }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('bulkAssignModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Preview Impact &rarr;</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

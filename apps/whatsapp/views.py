@@ -81,12 +81,6 @@ class WhatsAppWebhookView(APIView):
         ]
     )
     def post(self, request):
-        # 1. HMAC SHA-256 signature verification
-        signature_header = request.headers.get("X-Hub-Signature-256")
-        if not WebhookService.verify_signature(request.body, signature_header):
-            return JsonResponse({'error': 'Invalid signature'}, status=status.HTTP_403_FORBIDDEN)
-
-        # 2. Parse and process payload
         payload = request.data
         if not isinstance(payload, dict):
             try:
@@ -94,8 +88,19 @@ class WhatsAppWebhookView(APIView):
             except Exception:
                 payload = {}
 
+        tenant = WebhookService.resolve_tenant_from_payload(payload)
+        if tenant and not tenant.is_active:
+            logger.warning("Inbound webhook rejected: tenant %s is suspended.", tenant.name)
+            return JsonResponse({'error': 'Tenant suspended'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 1. HMAC SHA-256 signature verification scoped to tenant
+        signature_header = request.headers.get("X-Hub-Signature-256")
+        if not WebhookService.verify_signature(request.body, signature_header, tenant=tenant):
+            return JsonResponse({'error': 'Invalid signature'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 2. Process payload scoped to tenant
         try:
-            result = WebhookService.process_incoming_payload(payload)
+            result = WebhookService.process_incoming_payload(payload, tenant=tenant)
         except DatabaseError:
             logger.exception('Webhook database operation failed; provider should retry')
             result = {'status': 'RETRY_REQUIRED', 'failures': 1}

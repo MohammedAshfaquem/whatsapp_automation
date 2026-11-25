@@ -1,0 +1,43 @@
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { beforeEach, expect, test, vi } from 'vitest';
+import { AccountProfile } from '../src/components/settings/AccountProfile';
+import { fetchApi } from '../src/api/client';
+vi.mock('../src/api/client', () => ({ fetchApi: vi.fn() }));
+beforeEach(() => { vi.mocked(fetchApi).mockReset(); vi.mocked(fetchApi).mockResolvedValue({username:'alice',full_name:'Alice',email:'alice@example.com',password_change_supported:true}); });
+test('opens and dismisses without submitting and clears secrets', async () => {
+ render(<AccountProfile />);
+ fireEvent.click(await screen.findByRole('button', {name:'Change password'}));
+ expect(screen.getByRole('dialog',{name:'Change password'})).toBeInTheDocument();
+ fireEvent.change(screen.getByLabelText('Current password'), {target:{value:'secret'}});
+ fireEvent.keyDown(document,{key:'Escape'});
+ expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Change password'}));
+ expect(screen.getByLabelText('Current password')).toHaveValue('');
+ fireEvent.click(screen.getByRole('button',{name:'Close Change password'}));
+ fireEvent.click(screen.getByRole('button',{name:'Change password'}));
+ fireEvent.click(screen.getByRole('dialog').parentElement!);
+ expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ expect(fetchApi).toHaveBeenCalledTimes(1);
+});
+test('submits explicitly and resets secrets after success', async () => {
+ render(<AccountProfile />);
+ fireEvent.click(await screen.findByRole('button',{name:'Change password'}));
+ expect(screen.getByLabelText('Current password')).toHaveAttribute('autocomplete','current-password');
+ expect(screen.getByLabelText('New password')).toHaveAttribute('autocomplete','new-password');
+ for (const [label,value] of [['Current password','old'],['New password','next'],['Confirm new password','next']]) fireEvent.change(screen.getByLabelText(label),{target:{value}});
+ fireEvent.click(screen.getByRole('button',{name:'Update password'}));
+ await screen.findByText('Password changed.');
+ expect(fetchApi).toHaveBeenLastCalledWith('/api/auth/password/',{method:'POST',body:JSON.stringify({current_password:'old',new_password:'next',new_password_confirmation:'next'})});
+ expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Change password'}));
+ expect(screen.getByLabelText('New password')).toHaveValue('');
+});
+test('shows generic failures without echoing server secrets', async () => {
+ render(<AccountProfile />);
+ fireEvent.click(await screen.findByRole('button',{name:'Change password'}));
+ vi.mocked(fetchApi).mockRejectedValueOnce({error:'sensitive server detail'});
+ fireEvent.submit(screen.getByRole('dialog').querySelector('form')!);
+ expect(await screen.findByRole('alert')).toHaveTextContent('Unable to change password.');
+ expect(screen.queryByText('sensitive server detail')).not.toBeInTheDocument();
+});

@@ -1,0 +1,118 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Platform Overview — Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: var(--text-heading);">Platform Administration Overview</h1>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">Manage multi-tenant workspaces, subscription plans, approvals, and system-wide security policies.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'platform-tenants' %}" class="btn btn-primary">Manage Workspaces</a>
+        <a href="{% url 'platform-access-matrix' %}" class="btn btn-secondary">Access Matrix</a>
+    </div>
+</div>
+
+<!-- KPI Cards Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="card" style="margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Workspaces</div>
+        <div style="font-size: 2rem; font-weight: 800; color: var(--text-heading); margin-top: 4px;">{{ total_tenants }}</div>
+        <div style="font-size: 0.8rem; color: #047857; margin-top: 4px;">{{ active_tenants }} active accounts</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Pending Registrations</div>
+        <div style="font-size: 2rem; font-weight: 800; color: {% if pending_approvals_count > 0 %}#b45309{% else %}var(--text-heading){% endif %}; margin-top: 4px;">{{ pending_approvals_count }}</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Awaiting platform verification</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Suspended Workspaces</div>
+        <div style="font-size: 2rem; font-weight: 800; color: {% if suspended_tenants > 0 %}#991b1b{% else %}var(--text-heading){% endif %}; margin-top: 4px;">{{ suspended_tenants }}</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Access currently paused</div>
+    </div>
+
+    <div class="card" style="margin-bottom: 0;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">System Health</div>
+        <div style="font-size: 2rem; font-weight: 800; color: #047857; margin-top: 4px;">Healthy</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Database & services operational</div>
+    </div>
+</div>
+
+<!-- Pending Approvals Section -->
+{% if pending_approvals %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 800; color: var(--text-heading);">Workspaces Pending Platform Approval</h2>
+        <a href="{% url 'platform-tenants' %}?status=PENDING" style="font-size: 0.85rem; font-weight: 700; color: var(--primary); text-decoration: none;">View All Pending &rarr;</a>
+    </div>
+
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th>Workspace</th>
+                <th>Requested Plan</th>
+                <th>Registered Date</th>
+                <th>Notes</th>
+                <th style="text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in pending_approvals %}
+            <tr>
+                <td><strong>{{ sub.tenant.name }}</strong> ({{ sub.tenant.slug }})</td>
+                <td><span class="badge badge-yellow">{{ sub.requested_plan.name|default:"Basic" }}</span></td>
+                <td>{{ sub.tenant.created_at|date:"M d, Y" }}</td>
+                <td style="color: var(--text-muted);">{{ sub.notes|default:"Self-service signup" }}</td>
+                <td style="text-align: right;">
+                    <form method="post" action="{% url 'platform-tenants' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="approve_subscription">
+                        <input type="hidden" name="tenant_id" value="{{ sub.tenant.id }}">
+                        <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.78rem;">Approve & Activate</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Recent Security Audit Trail -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1.15rem; font-weight: 800; color: var(--text-heading);">Recent Platform Audit Activity</h2>
+        <a href="{% url 'platform-audit' %}" style="font-size: 0.85rem; font-weight: 700; color: var(--primary); text-decoration: none;">Full Audit Trail &rarr;</a>
+    </div>
+
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Workspace</th>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Summary</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in recent_audits %}
+            <tr>
+                <td style="font-size: 0.8rem; color: var(--text-muted);">{{ log.created_at|date:"M d, H:i" }}</td>
+                <td><strong>{{ log.tenant.name|default:"Platform" }}</strong></td>
+                <td>{{ log.actor.username|default:"System" }}</td>
+                <td><span class="badge badge-blue">{{ log.get_action_display }}</span></td>
+                <td>{{ log.summary }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No recent audit activity recorded.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

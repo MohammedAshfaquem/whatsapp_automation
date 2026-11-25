@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Onboarding Setup Wizard — {{ tenant.name }}{% endblock %}
+{% block page_title %}Workspace Onboarding Wizard{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding-bottom: 4rem;">
+    <!-- Wizard Header & Progress Bar -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <span class="badge badge-green">Workspace Setup</span>
+                <h2 style="font-size: 1.4rem; font-weight: 800; color: var(--text-heading); margin-top: 0.35rem;">
+                    {{ tenant.name }} Setup Wizard
+                </h2>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-heading);">
+                    {% if subscription %}
+                    Plan: {{ subscription.effective_plan.name|default:subscription.requested_plan.name }}
+                    <span class="badge {% if subscription.status == 'ACTIVE' %}badge-green{% else %}badge-yellow{% endif %}">
+                        {{ subscription.get_status_display }}
+                    </span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- 8-Step Navigation Bar -->
+        <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; border-bottom: 1px solid var(--border-light);">
+            <a href="?step=profile" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'profile' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                1. Profile
+            </a>
+            <a href="?step=plan" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'plan' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                2. Plan & Access
+            </a>
+            <a href="?step=whatsapp" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'whatsapp' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                3. WhatsApp API
+            </a>
+            <a href="?step=knowledge" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'knowledge' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                4. Knowledge
+            </a>
+            <a href="?step=team" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'team' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                5. Team Seats
+            </a>
+            <a href="?step=workspace" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'workspace' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                6. Pipeline
+            </a>
+            <a href="?step=test" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'test' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                7. Test Simulation
+            </a>
+            <a href="?step=readiness" style="padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; font-weight: 700; text-decoration: none; white-space: nowrap; {% if step == 'readiness' %}background: var(--primary); color: #fff;{% else %}background: #f1f5f9; color: #475569;{% endif %}">
+                8. Readiness
+            </a>
+        </div>
+    </div>
+
+    <!-- STEP 1: BUSINESS PROFILE -->
+    {% if step == 'profile' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 1: Business Profile</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Provide your public business details. These details ground the conversational AI assistant when answering customer questions.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Business Name *</label>
+                    {{ profile_form.shop_name }}
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Contact Phone *</label>
+                    {{ profile_form.contact_phone }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Public Email</label>
+                    {{ profile_form.contact_email }}
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Website URL</label>
+                    {{ profile_form.website }}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Business Location / Address</label>
+                {{ profile_form.address }}
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Business Hours</label>
+                {{ profile_form.business_hours }}
+            </div>
+
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Save Profile & Continue to Plan &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 2: PLAN & ACCESS STATUS -->
+    {% if step == 'plan' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 2: Plan & Entitlement Status</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Review your requested subscription tier and platform activation status.
+        </p>
+
+        <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Requested Plan</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--text-heading);">{{ subscription.requested_plan.name|default:"Basic" }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge {% if subscription.status == 'ACTIVE' %}badge-green{% else %}badge-yellow{% endif %}" style="font-size: 0.85rem;">
+                        {{ subscription.get_status_display }}
+                    </span>
+                </div>
+            </div>
+
+            {% if subscription.status == 'PENDING_APPROVAL' %}
+            <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1rem;">
+                <strong>Platform Review Notice:</strong> Your workspace is currently in setup mode. You can complete all onboarding configurations, invite team members, configure WhatsApp credentials, and test your assistant. Outbound live broadcast messaging is activated once platform staff approve your workspace.
+            </div>
+            {% endif %}
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; font-size: 0.85rem;">
+                <div style="background: #fff; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="color: #64748b;">Allocated Seats:</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a;">{{ subscription.effective_plan.max_staff|default:tenant.max_staff }}</div>
+                </div>
+                <div style="background: #fff; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="color: #64748b;">Contact Limit:</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a;">{{ subscription.effective_plan.max_contacts|default:"1,000" }}</div>
+                </div>
+                <div style="background: #fff; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="color: #64748b;">Catalog Services:</div>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #0f172a;">{{ subscription.effective_plan.max_services|default:tenant.max_services }}</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Confirm & Continue to WhatsApp Setup &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 3: WHATSAPP CONFIGURATION -->
+    {% if step == 'whatsapp' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 3: WhatsApp Cloud API Connection</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Configure your Meta WhatsApp Business Cloud API credentials. These allow your workspace to send and receive WhatsApp messages safely.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.85rem;">
+                <div style="font-weight: 700; color: #0f172a; margin-bottom: 4px;">Webhook Callback URL (Paste in Meta Developer Portal):</div>
+                <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 0.82rem; color: #0f172a; display: block; word-break: break-all;">
+                    {{ webhook_url }}
+                </code>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Phone Number ID *</label>
+                    {{ wa_form.phone_number_id }}
+                    {% if wa_form.phone_number_id.errors %}<div style="color: #e11d48; font-size: 0.78rem;">{{ wa_form.phone_number_id.errors.0 }}</div>{% endif %}
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">WhatsApp Business Account (WABA) ID</label>
+                    {{ wa_form.business_account_id }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Webhook Verify Token</label>
+                    {{ wa_form.verify_token }}
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Meta App Secret</label>
+                    {{ wa_form.app_secret }}
+                </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.35rem;">Permanent System User Access Token</label>
+                {{ wa_form.access_token }}
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 700;">
+                    {{ wa_form.is_active }} Enable Live WhatsApp Messaging
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Save Credentials & Continue &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 4: KNOWLEDGE & SERVICES -->
+    {% if step == 'knowledge' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 4: Services & Knowledge Catalog</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Add your primary offerings and common customer questions so the AI assistant can answer inquiries accurately.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Add a Primary Service or Offering</h4>
+                <div style="margin-bottom: 0.75rem;">
+                    <input type="text" name="service_name" class="form-input" placeholder="e.g. Website Development or Consulting">
+                </div>
+                <div>
+                    <textarea name="service_description" class="form-textarea" rows="2" placeholder="Brief description of what this service covers..."></textarea>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Add a Frequently Asked Question (FAQ)</h4>
+                <div style="margin-bottom: 0.75rem;">
+                    <input type="text" name="faq_question" class="form-input" placeholder="e.g. What is your turnaround time?">
+                </div>
+                <div>
+                    <textarea name="faq_answer" class="form-textarea" rows="2" placeholder="Accurate answer provided to customer inquiries..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Save Catalog Items & Continue &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 5: TEAM SETUP & SEATS -->
+    {% if step == 'team' %}
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="font-size: 1.2rem; font-weight: 800;">Step 5: Team Setup & Seats</h3>
+            <span class="badge {% if can_add_staff %}badge-green{% else %}badge-red{% endif %}">
+                Seats Used: {{ seats_used }} / {{ seats_max }}
+            </span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Invite sales representatives and support agents to collaborate in your shared WhatsApp inbox. Note: Workspace Owners and Admins count toward seat allocations.
+        </p>
+
+        <!-- Current Members Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.85rem;">
+            <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left;">
+                    <th style="padding: 0.5rem;">User</th>
+                    <th style="padding: 0.5rem;">Email</th>
+                    <th style="padding: 0.5rem;">Role</th>
+                    <th style="padding: 0.5rem;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in team_members %}
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 0.65rem 0.5rem; font-weight: 600;">{{ m.user.first_name|default:m.user.username }}</td>
+                    <td style="padding: 0.65rem 0.5rem; color: #64748b;">{{ m.user.email }}</td>
+                    <td style="padding: 0.65rem 0.5rem;"><span class="badge badge-blue">{{ m.get_role_display }}</span></td>
+                    <td style="padding: 0.65rem 0.5rem;"><span style="color: #047857; font-weight: 700;">● Active</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Invite Teammate Form -->
+        {% if can_add_staff %}
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem;">Invite a Colleague</h4>
+            <form method="post" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="invite_member">
+                <input type="email" name="email" class="form-input" placeholder="colleague@company.com" required style="flex: 2; min-width: 220px;">
+                <select name="role" class="form-select" style="flex: 1; min-width: 140px;">
+                    <option value="STAFF">Tenant Staff</option>
+                    <option value="ADMIN">Tenant Admin</option>
+                </select>
+                <button type="submit" class="btn-primary" style="padding: 0.7rem 1.25rem;">
+                    Send Invite
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div style="background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; padding: 1rem; border-radius: 8px; font-size: 0.88rem; margin-bottom: 1.5rem;">
+            <strong>Seat Limit Reached:</strong> Your current plan includes {{ seats_max }} seats, which are currently filled. To invite additional agents, contact Neoriz platform sales to upgrade your plan.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Continue to Sales Pipeline &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 6: SALES PIPELINE -->
+    {% if step == 'workspace' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 6: Sales Workspace & Pipeline</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Configure your deal pipeline. High-intent WhatsApp inquiries and demo requests are automatically placed into the initial stage of this pipeline.
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem;">Default Pipeline Name</label>
+                <input type="text" name="pipeline_name" value="Sales Pipeline" class="form-input" style="max-width: 400px;">
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Default Deal Stages Included:</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <span class="badge badge-blue">1. Lead Inquired (10%)</span>
+                    <span class="badge badge-purple">2. Qualified (30%)</span>
+                    <span class="badge badge-yellow">3. Quotation Sent (60%)</span>
+                    <span class="badge badge-green">4. Closed Won (100%)</span>
+                    <span class="badge badge-red">5. Closed Lost (0%)</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem;">
+                Confirm Pipeline & Continue to Simulation &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 7: TEST & PREVIEW (SIMULATOR) -->
+    {% if step == 'test' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 7: Synthetic Assistant Simulation</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Test how the conversational engine responds using your business profile, active services, and FAQs. This is a fully isolated synthetic simulation and does not incur Meta message charges.
+        </p>
+
+        <!-- Simulation Query Form -->
+        <form method="post" style="margin-bottom: 1.5rem;">
+            {% csrf_token %}
+            <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.5rem;">
+                Ask your assistant a customer question:
+            </label>
+            <div style="display: flex; gap: 0.75rem;">
+                <input type="text" name="test_query" value="{{ last_test.query|default:'What services do you provide?' }}" 
+                       class="form-input" style="flex: 1;" placeholder="e.g., What services do you offer? How do I book an appointment?">
+                <button type="submit" class="btn-primary" style="white-space: nowrap; padding: 0.65rem 1.25rem;">
+                    Run Simulation ⚡
+                </button>
+            </div>
+        </form>
+
+        <!-- Simulated Interaction Display -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>{{ profile.shop_name|default:tenant.name }} Virtual Assistant</strong>
+                    <div style="font-size: 0.75rem; color: #64748b;">Grounding: Catalog & FAQs for {{ tenant.name }}</div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <span class="badge badge-green">● Sandbox Safe</span>
+                    {% if last_test %}
+                    <span class="badge badge-blue">{{ last_test.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if last_test %}
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem;">
+                <!-- User simulated message -->
+                <div style="background: #e2e8f0; color: #1e293b; padding: 0.75rem 1.15rem; border-radius: 14px 14px 14px 2px; font-size: 0.88rem; max-width: 80%; align-self: flex-start;">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: #64748b; margin-bottom: 2px;">CUSTOMER (SIMULATED)</div>
+                    {{ last_test.query }}
+                </div>
+
+                <!-- Assistant simulated reply -->
+                <div style="background: var(--primary); color: #ffffff; padding: 0.85rem 1.15rem; border-radius: 14px 14px 2px 14px; font-size: 0.88rem; max-width: 85%; align-self: flex-end; white-space: pre-wrap; line-height: 1.5;">
+                    <div style="font-size: 0.72rem; font-weight: 700; color: rgba(255,255,255,0.8); margin-bottom: 2px;">ASSISTANT RESPONSE</div>
+                    {{ last_test.response }}
+                </div>
+            </div>
+
+            {% if last_test.grounding_sources %}
+            <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.5rem; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem;">
+                <strong>Grounding Sources:</strong> {{ last_test.grounding_sources|join:", " }}
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="test_query" value="{{ last_test.query|default:'What services do you provide?' }}">
+            <button type="submit" class="btn-primary" style="padding: 0.75rem 1.75rem; font-weight: 700;">
+                Simulation Verified &rarr; Continue to Readiness Review
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- STEP 8: READINESS REVIEW -->
+    {% if step == 'readiness' %}
+    <div class="card">
+        <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem;">Step 8: Readiness & Final Review</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Review your workspace configuration status before entering the production dashboard.
+        </p>
+
+        <div style="background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 1rem; font-size: 0.9rem;">
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Email Address Verification</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Required for live CRM contact exports and WhatsApp delivery</div>
+                    </div>
+                    {% if checklist.email_verified %}
+                    <span class="badge badge-green">✓ Verified</span>
+                    {% else %}
+                    <span class="badge badge-yellow">▲ Pending Verification</span>
+                    {% endif %}
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Business Profile</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Company identity, address, and greeting configured</div>
+                    </div>
+                    {% if checklist.profile_ok %}
+                    <span class="badge badge-green">✓ Ready</span>
+                    {% else %}
+                    <span class="badge badge-yellow">▲ Incomplete</span>
+                    {% endif %}
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>WhatsApp Cloud API Credentials</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Phone ID and access token format</div>
+                    </div>
+                    {% if checklist.wa_ok %}
+                    <span class="badge badge-green">✓ Configured</span>
+                    {% else %}
+                    <span class="badge badge-yellow">▲ Pending Credentials</span>
+                    {% endif %}
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Catalog Offerings & FAQs</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Knowledge sources grounding assistant replies</div>
+                    </div>
+                    <span class="badge badge-blue">{{ checklist.services_count }} Offerings</span>
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Active Team Members</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Allocated workspace seats</div>
+                    </div>
+                    <span class="badge badge-blue">{{ checklist.team_count }} Members</span>
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Synthetic Assistant Simulation</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Catalog response verification test</div>
+                    </div>
+                    {% if checklist.synthetic_test_ok %}
+                    <span class="badge badge-green">✓ Simulation Passed</span>
+                    {% else %}
+                    <span class="badge badge-yellow">▲ Needs Test</span>
+                    {% endif %}
+                </li>
+                <li style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <strong>Platform Subscription Status</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Subscription activation by platform administrator</div>
+                    </div>
+                    {% if checklist.is_subscription_active %}
+                    <span class="badge badge-green">● Active & Operational</span>
+                    {% else %}
+                    <span class="badge badge-yellow">▲ Pending Platform Activation</span>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary" style="padding: 0.85rem 2rem; font-size: 1rem; font-weight: 700;">
+                Complete Onboarding & Enter Workspace &rarr;
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "marketing/base_marketing.html" %}
+
+{% block title %}Check Your Email &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4.5rem 0; min-height: 78vh;">
+    <div class="container" style="max-width: 600px;">
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-md);">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem auto;">
+                &#9993;
+            </div>
+            <h1 style="text-align: center; font-size: 1.85rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.75rem;">
+                Check Your Email
+            </h1>
+
+            {% if feedback %}
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 0.85rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                {{ feedback }}
+            </div>
+            {% endif %}
+
+            {% if error_feedback %}
+            <div style="background: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; padding: 0.85rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.88rem;">
+                {{ error_feedback }}
+            </div>
+            {% endif %}
+
+            {% if generic_notice %}
+                <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: center; margin-bottom: 1.5rem;">
+                    {{ generic_notice }}
+                </p>
+                <div style="text-align: center;">
+                    <a href="{% url 'login' %}" class="btn btn-primary" style="padding: 0.75rem 1.75rem;">Go to Sign In</a>
+                </div>
+            {% elif onboarding %}
+                {% if onboarding.email_verified %}
+                    <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: center; margin-bottom: 1.5rem;">
+                        Your email address (<strong>{{ onboarding.owner_email }}</strong>) is verified!
+                        {% if onboarding.approval_status == 'APPROVED' %}
+                            Your workspace has been approved. Check your inbox for your single-use password setup link.
+                        {% else %}
+                            Your registration for <strong>{{ onboarding.business_name }}</strong> is now awaiting platform administrator approval.
+                        {% endif %}
+                    </p>
+                {% else %}
+                    <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: center; margin-bottom: 1.25rem;">
+                        We sent a single-use verification link to <strong>{{ onboarding.owner_email }}</strong> for <strong>{{ onboarding.business_name }}</strong>.
+                        Please confirm within <strong>{{ expiry_minutes }} minutes</strong>.
+                    </p>
+
+                    {% if latest_email %}
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.35rem; font-size: 0.84rem; color: #475569;">
+                        <strong>Mail Outbox Status:</strong> {{ email_status_text }}
+                        {% if latest_email.status == 'FAILED' or latest_email.status == 'UNKNOWN' %}
+                        <div style="color: #9f1239; margin-top: 0.35rem;">
+                            Delivery ran into a temporary mail relay issue. Please verify the address below or contact support@neorizsolutions.com.
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'registration-check-email' %}" style="margin-bottom: 1.5rem; text-align: center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="resend">
+                        <button
+                            id="resend-btn"
+                            type="submit"
+                            class="btn btn-primary"
+                            style="width: 100%; padding: 0.85rem; font-weight: 700;"
+                            {% if cooldown_remaining > 0 %}disabled{% endif %}
+                        >
+                            {% if cooldown_remaining > 0 %}
+                                Resend available in <span id="cooldown-sec">{{ cooldown_remaining }}</span>s
+                            {% else %}
+                                Resend Verification Email
+                            {% endif %}
+                        </button>
+                    </form>
+
+                    <div style="border-top: 1px solid #e2e8f0; padding-top: 1.35rem;">
+                        <h2 style="font-size: 0.95rem; font-weight: 700; color: var(--text-heading); margin-bottom: 0.45rem;">
+                            Entered the wrong email?
+                        </h2>
+                        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                            Updating your registration email invalidates any previously sent verification links.
+                        </p>
+                        <form method="post" action="{% url 'registration-check-email' %}" style="display: flex; gap: 0.65rem;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="change_email">
+                            <input type="email" name="new_email" required placeholder="new-owner@company.com" style="flex:1;padding:0.65rem 0.9rem;border:1px solid #cbd5e1;border-radius:8px;">
+                            <button type="submit" class="btn" style="background:#0f172a;color:#fff;padding:0.65rem 1.1rem;border-radius:8px;font-weight:600;border:0;cursor:pointer;">
+                                Update Email
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            {% else %}
+                <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; text-align: center; margin-bottom: 1.5rem;">
+                    Check your email inbox for your 30-minute verification link, or request a new link if yours expired.
+                </p>
+                <div style="text-align: center;">
+                    <a href="{% url 'resend-verification' %}" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">Resend Verification Link</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% if cooldown_remaining > 0 %}
+<script>
+(function(){
+    var s = {{ cooldown_remaining }};
+    var btn = document.getElementById('resend-btn');
+    var span = document.getElementById('cooldown-sec');
+    var timer = setInterval(function(){
+        s -= 1;
+        if (s <= 0) {
+            clearInterval(timer);
+            if (btn) { btn.disabled = false; btn.textContent = 'Resend Verification Email'; }
+        } else if (span) {
+            span.textContent = s;
+        }
+    }, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,33 @@
+<div class="crm-top-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div class="top-pill-tabs" style="margin-bottom: 0;">
+        <a href="{% url 'crm-overview' %}" class="pill-tab-btn {% if request.resolver_match.url_name == 'crm-overview' %}active{% endif %}">
+            <span>📊 Overview</span>
+        </a>
+        <a href="{% url 'crm-contact-list' %}" class="pill-tab-btn {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
+            <span>👥 Contacts</span>
+        </a>
+        <a href="{% url 'crm-company-list' %}" class="pill-tab-btn {% if 'company' in request.resolver_match.url_name %}active{% endif %}">
+            <span>🏢 Companies</span>
+        </a>
+        <a href="{% url 'crm-deal-board' %}" class="pill-tab-btn {% if request.resolver_match.url_name == 'crm-deal-board' %}active{% endif %}">
+            <span>📋 Deal Board</span>
+        </a>
+        <a href="{% url 'crm-deal-list' %}" class="pill-tab-btn {% if request.resolver_match.url_name == 'crm-deal-list' or request.resolver_match.url_name == 'crm-deal-detail' or request.resolver_match.url_name == 'crm-deal-create' %}active{% endif %}">
+            <span>💼 Deals List</span>
+        </a>
+        <a href="{% url 'crm-activity-list' %}" class="pill-tab-btn {% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
+            <span>⏱ Tasks & Activities</span>
+        </a>
+        {% if can_manage or user.is_superuser %}
+        <a href="{% url 'crm-settings' %}" class="pill-tab-btn {% if 'settings' in request.resolver_match.url_name %}active{% endif %}">
+            <span>⚙ Pipelines</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="crm-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+        <a href="{% url 'crm-contact-create' %}" class="btn-secondary" style="padding: 0.5rem 0.9rem; font-size: 0.82rem; border-radius: 8px;">+ Contact</a>
+        <a href="{% url 'crm-company-create' %}" class="btn-secondary" style="padding: 0.5rem 0.9rem; font-size: 0.82rem; border-radius: 8px;">+ Company</a>
+        <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="padding: 0.5rem 0.9rem; font-size: 0.82rem; border-radius: 8px;">+ New Deal</a>
+    </div>
+</div>

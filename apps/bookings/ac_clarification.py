@@ -7,6 +7,9 @@ from .models import BookingStep
 
 
 def clarify_ac_type(session, message):
+    from apps.business.domain import is_it_business
+    if is_it_business():
+        return None
     from .booking_service import BookingService
     if session.step != BookingStep.AC_DETAILS or session.data.get('ac_type'):
         return None

@@ -1,0 +1,2 @@
+{% extends 'tenants/recovery_form.html' %}
+{% block content %}<section class="recovery-card"><h1>Choose a new password</h1>{% if validlink %}<form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit" style="margin-top:1rem">Save new password</button></form>{% else %}<p>This recovery link is invalid or has expired.</p><a href="{% url 'password-reset' %}">Request a new recovery link</a>{% endif %}</section>{% endblock %}

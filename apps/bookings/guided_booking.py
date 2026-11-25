@@ -28,6 +28,39 @@ class BookingService:
     def prompt(cls, session):
         lang = session.conversation.customer.preferred_language
         data = session.data
+        from apps.business.domain import is_it_business
+        if is_it_business():
+            prod_name = data.get('product_name', '')
+            if session.step == BookingStep.NAME:
+                if data.get('booking_for_other'):
+                    return say('recipient_name', lang)
+                if prod_name:
+                    return f"May I have your name to arrange the {prod_name} demo?"
+                return say('name', lang)
+            if session.step == BookingStep.SERVICE:
+                return "Which IT agency service or product would you like to explore (e.g. Website Development, Mobile App, TABLO, or WhatsApp CRM)?"
+            if session.step == BookingStep.AC_DETAILS:
+                if prod_name:
+                    if 'tablo' in prod_name.lower():
+                        return "Could you briefly share your restaurant type (e.g. QSR, café, food court) and any key operational challenge?"
+                    if 'whatsapp' in prod_name.lower():
+                        return "Could you briefly share your business type and your current customer enquiry workflow?"
+                    return f"What are your requirements for {prod_name}?"
+                return say('details', lang)
+            if session.step == BookingStep.ADDRESS:
+                if data.get('booking_for_other'):
+                    return say('recipient_address', lang)
+                return say('address', lang)
+            if session.step == BookingStep.SCHEDULE:
+                if data.get('preferred_date'):
+                    return say('time_for_date', lang).format(date=cls.display_date(data['preferred_date'], lang))
+                if data.get('preferred_time_slot'):
+                    return say('date_for_time', lang).format(time=data['preferred_time_slot'])
+                return say('schedule', lang)
+            if session.step == BookingStep.REVIEW:
+                return cls.review(session)
+            return say(cls.KEYS.get(session.step, 'service'), lang)
+
         if data.get('booking_for_other'):
             if session.step == BookingStep.NAME and not data.get('recipient_name'):
                 return say('recipient_name', lang)
@@ -45,6 +78,7 @@ class BookingService:
             if data.get('preferred_time_slot'):
                 return say('date_for_time', lang).format(time=data['preferred_time_slot'])
         return say(cls.KEYS.get(session.step, 'service'), lang)
+
 
     @classmethod
     def progress(cls, conversation):
@@ -90,11 +124,21 @@ class BookingService:
         data = {}
         if conversation.customer.name:
             data['name'] = conversation.customer.name
-        if matched_service and matched_service.is_active:
-            data.update(service_id=matched_service.id, service_name=matched_service.name)
+        from apps.business.models import Product
+        if isinstance(matched_service, Product):
+            data.update(product_id=matched_service.id, product_name=matched_service.name, request_type='product_demo',
+                        ac_type=f"{matched_service.name} Demo")
+        elif matched_service and matched_service.is_active:
+            from apps.business.domain import is_it_business
+            if is_it_business():
+                data.update(service_id=matched_service.id, service_name=matched_service.name, request_type='consultation',
+                            ac_type='Project consultation')
+            else:
+                data.update(service_id=matched_service.id, service_name=matched_service.name)
         if for_other:
             data['booking_for_other'] = True
-        step = BookingStep.NAME if not data.get('name') else (BookingStep.AC_DETAILS if data.get('service_id') else BookingStep.SERVICE)
+        has_item = bool(data.get('service_id') or data.get('product_id'))
+        step = BookingStep.NAME if not data.get('name') else (BookingStep.AC_DETAILS if has_item else BookingStep.SERVICE)
         if for_other:
             step = BookingStep.NAME
         return step, data
@@ -102,13 +146,15 @@ class BookingService:
     @classmethod
     def start_booking_session(cls, conversation, matched_service=None, for_other=False):
         step, data = cls.initial_state(conversation, matched_service, for_other)
-        if matched_service or for_other:
-            conversation.service = matched_service
+        if isinstance(matched_service, Service) or for_other:
+            conversation.service = matched_service if isinstance(matched_service, Service) else None
             conversation.save(update_fields=['service'])
         session, _ = BookingSession.objects.update_or_create(conversation=conversation, defaults={'data': data, 'step': step})
-        service = f" {matched_service.name}." if matched_service else ''
+        target_name = matched_service.name if hasattr(matched_service, 'name') else ''
+        service = f" {target_name}." if target_name else ''
         lang = conversation.customer.preferred_language
         return f"{say('start', lang)}{service}\n{say('booking_help', lang)}\n\n{cls.prompt(session)}", None
+
 
     @staticmethod
     def recipient_correction(message):
@@ -245,6 +291,13 @@ class BookingService:
     @staticmethod
     def collect_ac_details(data, message):
         """Keep type and symptoms separately, even when supplied across turns."""
+        from apps.business.domain import is_it_business
+        if is_it_business():
+            from apps.chatbot.intent_service import IntentService
+            if len(message.strip()) >= 3 and not IntentService.is_clarification(message):
+                data.setdefault('ac_type', 'Project consultation')
+                data['problem_description'] = message.strip()[:1500]
+            return
         lower = message.lower()
         ac_type = next((kind + ' AC' for kind in ('Window', 'Split', 'Inverter', 'Cassette', 'Tower', 'Other')
                         if re.search(r'\b' + kind.lower() + r'\b', lower)), None)
@@ -310,8 +363,27 @@ class BookingService:
     @classmethod
     def review(cls, session):
         data = session.data
-        service = Service.objects.filter(pk=data.get('service_id'), is_active=True).first()
+        service = Service.objects.filter(pk=data.get('service_id'), is_active=True).first() if data.get('service_id') else None
+        from apps.business.models import Product
+        product = Product.objects.filter(pk=data.get('product_id'), is_active=True).first() if data.get('product_id') else None
         lang = session.conversation.customer.preferred_language
+        from apps.business.domain import is_it_business
+        if is_it_business():
+            req_type = "Product Demo" if product else "Project Consultation"
+            target_name = product.name if product else (service.name if service else data.get('service_name', 'General IT Consultation'))
+            recipient = f"{say('name_label', lang)}: {data.get('name', '')}\n{say('recipient_label', lang)}: {data['recipient_name']}\n" if data.get('recipient_name') else f"{say('name_label', lang)}: {data.get('name', '')}\n"
+            pricing_text = product.formatted_pricing if product else (say('inspection_quote', lang) if service and service.price_type == PriceType.INSPECTION_REQUIRED else (service.formatted_price if service else 'Quote after review'))
+            return (
+                f"*Please review your {req_type} request before submitting:*\n\n"
+                f"{recipient}"
+                f"• Request: *{target_name}* ({req_type})\n"
+                f"• {say('details_label', lang)}: {data.get('ac_type', target_name)}\n"
+                f"• {say('issue_label', lang)}: {data.get('problem_description', '')}\n"
+                f"• {say('address_label', lang)}: {data.get('service_address', '')}\n"
+                f"• {say('schedule_label', lang)}: {data.get('preferred_date', '')} · {data.get('preferred_time_slot', '')}\n"
+                f"• Pricing: {pricing_text}\n\n"
+                f"The requested time slot is pending confirmation by our team. Reply *Confirm* to submit, or let me know if you want to edit any detail."
+            )
         recipient = f"{say('recipient_label', lang)}: {data['recipient_name']}\n" if data.get('recipient_name') else ''
         return (f"{say('review', lang)}\n\n"
                 f"{say('name_label', lang)}: {data.get('name', '')}\n"
@@ -340,22 +412,26 @@ class BookingService:
             session.step = BookingStep.EDIT
             session.save()
             return cls.prompt(session), None
-        if lower.startswith('booking_edit_') and session.step == BookingStep.EDIT:
+        if lower.startswith('booking_edit_'):
             target = lower.removeprefix('booking_edit_').upper()
             if target in cls.STEPS[:-1]:
                 session.step = target
                 data['return_to_review'] = True
+                if target == BookingStep.SCHEDULE:
+                    data.pop('preferred_time_slot', None)
                 session.save()
             return cls.prompt(session), None
         if session.step == BookingStep.REVIEW:
-            if lower not in ('booking_submit', 'submit', 'confirm', 'yes'):
+            if lower not in ('booking_submit', 'submit', 'confirm', 'yes', 'shari', 'athe', 'ha', 'confirm request'):
                 return cls.review(session), None
             if data.get('booking_for_other') and not data.get('recipient_name'):
                 data['recipient_resume_step'] = BookingStep.REVIEW
                 session.step = BookingStep.NAME
                 session.save()
                 return cls.prompt(session), None
-            service = Service.objects.filter(pk=data.get('service_id'), is_active=True).first()
+            from apps.business.models import Product
+            product = Product.objects.filter(pk=data.get('product_id'), is_active=True).first() if data.get('product_id') else None
+            service = Service.objects.filter(pk=data.get('service_id'), is_active=True).first() if data.get('service_id') else None
             try:
                 selected_date = date.fromisoformat(data['preferred_date'])
             except (KeyError, ValueError):
@@ -368,18 +444,41 @@ class BookingService:
                 session.data = data
                 session.save()
                 return say('invalid_date', lang) + '\n\n' + cls.prompt(session), None
-            if not service:
+            if not service and not product:
                 session.step = BookingStep.SERVICE
                 session.save()
                 return cls.prompt(session), None
-            booking = Booking.objects.create(customer=conversation.customer, conversation=conversation,
+
+            from apps.business.domain import is_it_business
+            from apps.bookings.models import RequestType
+            req_type = RequestType.PRODUCT_DEMO if product else (RequestType.CONSULTATION if is_it_business() else RequestType.SERVICE_REQUEST)
+            target_name = product.name if product else (service.name if service else 'General Consultation')
+
+            booking = Booking.objects.create(
+                customer=conversation.customer,
+                conversation=conversation,
+                request_type=req_type,
+                product=product,
+                service=service,
                 recipient_name=data.get('recipient_name', ''),
-                service=service, ac_type=data.get('ac_type', ''), problem_description=data.get('problem_description', ''),
-                service_address=data['service_address'], preferred_date=selected_date,
-                preferred_time_slot=data['preferred_time_slot'], status=BookingStatus.PENDING)
+                organization=data.get('organization', data.get('service_address', '')),
+                contact_email=data.get('contact_email', ''),
+                requirements_summary=data.get('problem_description', ''),
+                staff_summary=f"{req_type.label} for {target_name}. Contact: {data.get('service_address')}. Details: {data.get('problem_description')}",
+                language=lang,
+                service_address=data['service_address'],
+                ac_type=data.get('ac_type', f"{target_name} Demo" if product else "Project consultation"),
+                problem_description=data.get('problem_description', ''),
+                preferred_date=selected_date,
+                preferred_time_slot=data['preferred_time_slot'],
+                status=BookingStatus.PENDING
+            )
             session.step = BookingStep.COMPLETED
             session.save()
+            if is_it_business():
+                return f"*Request #{booking.id} Submitted*\nStatus: Pending Team Confirmation\n\n{target_name} ({req_type.label})\n{selected_date} · {booking.preferred_time_slot}\n{booking.service_address}\n\nOur team will review your requested time and contact you to confirm.", booking.id
             return f"*Booking #{booking.id}*\n{say('submitted', lang)}\n\n{service.name}\n{selected_date} · {booking.preferred_time_slot}\n{booking.service_address}", booking.id
+
         if session.step == BookingStep.EDIT:
             return cls.prompt(session), None
         if session.step == BookingStep.NAME:
@@ -401,11 +500,29 @@ class BookingService:
         elif session.step == BookingStep.SERVICE:
             service = IntentService.find_matching_service(lower)
             if not service:
-                return cls.prompt(session), None
-            data.update(service_id=service.id, service_name=service.name)
-            conversation.service = service
-            conversation.save(update_fields=['service'])
-            session.step = BookingStep.AC_DETAILS
+                from apps.business.domain import is_it_business
+                from apps.chatbot.intent_service import IntentService as IS
+                prod = IS.find_matching_product(lower) if is_it_business() else None
+                if prod:
+                    data.update(
+                        product_id=prod.id,
+                        product_name=prod.name,
+                        request_type='product_demo',
+                        service_name=f"{prod.name} Demo",
+                        ac_type=f"{prod.name} Demo",
+                    )
+                    data.pop('service_id', None)
+                    session.step = BookingStep.AC_DETAILS
+                else:
+                    return cls.prompt(session), None
+            else:
+                ac_type_val = 'Project consultation' if is_it_business() else service.name
+                data.update(service_id=service.id, service_name=service.name, request_type='consultation', ac_type=ac_type_val)
+                data.pop('product_id', None)
+                data.pop('product_name', None)
+                conversation.service = service
+                conversation.save(update_fields=['service'])
+                session.step = BookingStep.AC_DETAILS
         elif session.step == BookingStep.AC_DETAILS:
             if len(msg) < 2 or len(msg) > 1500 or not any(c.isalpha() for c in msg):
                 return say('invalid', lang) + '\n' + cls.prompt(session), None
@@ -413,7 +530,9 @@ class BookingService:
             if data.get('ac_type') and data.get('problem_description'):
                 session.step = BookingStep.ADDRESS
         elif session.step == BookingStep.ADDRESS:
-            if len(msg) < 12 or len(msg) > 1500 or len(msg.split()) < 3 or '?' in msg:
+            from apps.business.domain import is_it_business
+            minimum = len(msg) >= 3 if is_it_business() else len(msg) >= 12 and len(msg.split()) >= 3
+            if not minimum or len(msg) > 1500 or '?' in msg:
                 return say('invalid', lang) + '\n' + cls.prompt(session), None
             data['service_address'] = msg
             session.step = BookingStep.SCHEDULE

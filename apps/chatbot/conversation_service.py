@@ -80,17 +80,48 @@ class ConversationService:
     @classmethod
     def generate_handoff_summary(cls, conversation: Conversation, reason: str = "Customer requested human support") -> str:
         """
-        Generate a structured handoff note (Principle 3 from LLM Support Bot System Design)
-        so human technicians and staff have immediate context without asking the customer to repeat.
+        Generate a structured handoff note so human technicians and staff
+        have immediate context without asking the customer to repeat.
         """
+        from apps.business.domain import is_it_business
         cust = conversation.customer
         last_inbounds = Message.objects.filter(
             conversation=conversation,
             direction=MessageDirection.INBOUND
-        ).order_by('-created_at')[:3]
+        ).order_by('-created_at')[:4]
         recent_queries = " -> ".join([f'"{m.message_text}"' for m in reversed(last_inbounds)])
-        svc_name = conversation.service.name if conversation.service else "General AC Support"
+
         session = BookingSession.objects.filter(conversation=conversation).first()
+        session_data = session.data if session else {}
+
+        if is_it_business():
+            target = session_data.get('product_name') or (conversation.service.name if conversation.service else "IT Agency / Product Enquiry")
+            req_type = session_data.get('request_type', 'Enquiry / Consultation')
+            draft_details = []
+            if session_data.get('organization'):
+                draft_details.append(f"• Organization: {session_data['organization']}")
+            if session_data.get('service_address'):
+                draft_details.append(f"• Contact/Location: {session_data['service_address']}")
+            if session_data.get('problem_description'):
+                draft_details.append(f"• Business Context / Requirements: {session_data['problem_description']}")
+            if session_data.get('preferred_date') or session_data.get('preferred_time_slot'):
+                draft_details.append(f"• Requested Timing: {session_data.get('preferred_date', '')} {session_data.get('preferred_time_slot', '')}".strip())
+
+            draft_block = "\n".join(draft_details)
+            if draft_block:
+                draft_block = "\n" + draft_block
+
+            return (
+                f"📋 NEORIZ SOLUTIONS HANDOFF SUMMARY\n"
+                f"• Customer: {cust.name or 'Unknown'} ({cust.phone_number})\n"
+                f"• Escalation Reason: {reason}\n"
+                f"• Area of Interest: {target} ({req_type})\n"
+                f"• Customer Goal / Recent Inquiries: {recent_queries or 'None'}"
+                f"{draft_block}\n"
+                f"• Unresolved / Action Required: Staff review and direct follow-up on verified details/quote."
+            )
+
+        svc_name = conversation.service.name if conversation.service else "General AC Support"
         recipient = session.data.get('recipient_name') if session else None
         recipient_line = f'• Service recipient: {recipient} (arranged by customer)\n' if recipient else ''
         draft_lines = ''
@@ -114,9 +145,28 @@ class ConversationService:
     def process_message(
         cls, phone_number, message_text, channel=ChannelChoice.SIMULATED,
         external_message_id=None, service_id=None, customer_name=None, conversation_id=None,
-        external_timestamp=None, image_media_id=None, flow_response=None
+        external_timestamp=None, image_media_id=None, flow_response=None, tenant=None,
+        external_media=None
     ):
-        customer, _ = Customer.objects.get_or_create(phone_number=phone_number.strip())
+        from apps.tenants.context import get_current_tenant
+        if tenant is None:
+            tenant = get_current_tenant()
+        if tenant is None:
+            # Try resolving tenant from an existing customer with this phone number
+            existing_cust = Customer.objects.filter(phone_number=phone_number.strip()).select_related('tenant').first()
+            if existing_cust and existing_cust.tenant:
+                tenant = existing_cust.tenant
+
+        if tenant and not tenant.is_active:
+            return {
+                'conversation_id': None,
+                'reply': 'This business service is currently inactive. Please contact support.',
+                'handover_required': False,
+                'booking_id': None,
+                'status': 'suspended'
+            }
+
+        customer, _ = Customer.objects.get_or_create(tenant=tenant, phone_number=phone_number.strip())
         # A lease serializes turns across processes without blocking other DB writers.
         with customer_turn(customer) as token:
             customer.refresh_from_db()
@@ -141,7 +191,8 @@ class ConversationService:
                         'booking_id': None, 'ignored_reason': 'out_of_order'}
             return cls._process_message(phone_number, message_text, channel, external_message_id,
                 service_id, customer_name, conversation_id, image_media_id, flow_response,
-                processing_token=token, external_timestamp=external_timestamp)
+                processing_token=token, external_timestamp=external_timestamp, tenant=tenant,
+                external_media=external_media)
 
     @classmethod
     def _process_message(
@@ -154,7 +205,8 @@ class ConversationService:
         customer_name: Optional[str] = None,
         conversation_id: Optional[int] = None,
         image_media_id: Optional[str] = None,
-        flow_response=None, processing_token=None, external_timestamp=None
+        flow_response=None, processing_token=None, external_timestamp=None,
+        tenant=None, external_media=None
     ) -> Dict[str, Any]:
         """
         Process incoming customer message and generate an accurate, grounded reply.
@@ -178,43 +230,66 @@ class ConversationService:
                 conversation_id = existing.conversation_id
 
         # 2. Get or create Customer
-        customer, _ = Customer.objects.get_or_create(phone_number=cleaned_phone)
+        customer, created = Customer.objects.get_or_create(
+            tenant=tenant,
+            phone_number=cleaned_phone,
+            defaults={
+                'name': customer_name or '',
+                'source': 'WHATSAPP_INBOUND' if channel == ChannelChoice.WHATSAPP else 'WEBSITE',
+                'last_contacted_at': timezone.now()
+            }
+        )
         if flow_response is not None and channel == ChannelChoice.WHATSAPP:
             from apps.whatsapp.booking_flows import response_conversation_id
             conversation_id = response_conversation_id(customer, flow_response)
+        update_fields = []
+        if not created:
+            customer.last_contacted_at = timezone.now()
+            update_fields.append('last_contacted_at')
+            if customer_name and not customer.name:
+                customer.name = customer_name
+                update_fields.append('name')
 
         language = detect_language(cleaned_text, customer.preferred_language)
         if language != customer.preferred_language:
             customer.preferred_language = language
-            customer.save(update_fields=['preferred_language'])
+            update_fields.append('preferred_language')
+
+        if update_fields:
+            customer.save(update_fields=update_fields)
         # Look up optional service context
         service = None
         if service_id:
             service = Service.objects.filter(id=service_id, is_active=True).first()
 
-        # 3. Get or create active Conversation (scoped to service if provided)
-        conv_query = Conversation.objects.filter(
-            customer=customer,
-            channel=channel
-        ).exclude(status=ConversationStatus.CLOSED)
-        if conversation_id:
-            conv_query = conv_query.filter(pk=conversation_id)
-        elif service:
-            conv_query = conv_query.filter(service=service)
-
-        # A retry belongs to its original conversation even if staff closed it.
-        conversation = existing.conversation if existing else conv_query.order_by('-updated_at').first()
-
-        if not conversation:
-            conversation = Conversation.objects.create(
+        # Share the parent lock with outbound new-chat resolution.
+        with transaction.atomic():
+            Customer.objects.select_for_update().get(pk=customer.pk)
+            # 3. Get or create active Conversation (scoped to service if provided)
+            conv_query = Conversation.objects.filter(
+                tenant=tenant,
                 customer=customer,
-                service=service,
-                channel=channel,
-                status=ConversationStatus.BOT_ACTIVE
-            )
-        elif service and conversation.service != service:
-            conversation.service = service
-            conversation.save(update_fields=['service'])
+                channel=channel
+            ).exclude(status=ConversationStatus.CLOSED)
+            if conversation_id:
+                conv_query = conv_query.filter(pk=conversation_id)
+            elif service:
+                conv_query = conv_query.filter(service=service)
+
+            # A retry belongs to its original conversation even if staff closed it.
+            conversation = existing.conversation if existing else conv_query.order_by('-updated_at').first()
+
+            if not conversation:
+                conversation = Conversation.objects.create(
+                    tenant=tenant,
+                    customer=customer,
+                    service=service,
+                    channel=channel,
+                    status=ConversationStatus.BOT_ACTIVE
+                )
+            elif service and conversation.service != service:
+                conversation.service = service
+                conversation.save(update_fields=['service'])
 
         # A name supplied for a service recipient must never rename the requester.
         draft = BookingSession.objects.filter(conversation=conversation).first()
@@ -229,14 +304,31 @@ class ConversationService:
             customer.save(update_fields=['name'])
 
         # 4. Persist Inbound Message
-        inbound = existing or Message.objects.create(
-            conversation=conversation,
-            direction=MessageDirection.INBOUND,
-            sender_type=SenderType.CUSTOMER,
-            message_text=cleaned_text,
-            external_message_id=external_message_id,
-            processing_status=ProcessingStatus.PROCESSING
-        )
+        media_fields = {}
+        if isinstance(external_media, dict) and external_media.get('media_type'):
+            media_fields = {
+                'media_type': str(external_media.get('media_type') or '')[:20],
+                'media_name': str(external_media.get('media_name') or '')[:200],
+                'media_mime': str(external_media.get('media_mime') or '')[:100],
+            }
+        if existing:
+            inbound = existing
+        else:
+            inbound = Message.objects.create(
+                conversation=conversation,
+                direction=MessageDirection.INBOUND,
+                sender_type=SenderType.CUSTOMER,
+                message_text=cleaned_text,
+                external_message_id=external_message_id,
+                processing_status=ProcessingStatus.PROCESSING,
+                **media_fields,
+            )
+            from django.db.models import F as _F
+            Conversation.objects.filter(pk=conversation.pk).update(
+                unread_count=_F('unread_count') + 1,
+                last_inbound_at=timezone.now(),
+                followup_alert_sent_at=None,
+            )
 
         # Route the message, then add shared controls and persist the exact response.
         if (channel == ChannelChoice.WHATSAPP and external_message_id
@@ -320,7 +412,16 @@ class ConversationService:
         inbound.processing_status = ProcessingStatus.PROCESSED
         inbound.save(update_fields=['response_data', 'processing_status'])
         if outbound:
-            outbound.response_data = result
+            out_data = dict(result)
+            try:
+                from apps.business.models import BusinessProfile
+                from apps.crm.business_hours import is_within_business_hours
+                bp = BusinessProfile.get_active(tenant=conversation.tenant)
+                if bp and bp.after_hours_auto_reply and reply_text == bp.after_hours_auto_reply.strip() and not is_within_business_hours(bp):
+                    out_data['after_hours_auto_reply'] = True
+            except Exception:
+                pass
+            outbound.response_data = out_data
             outbound.save(update_fields=['response_data'])
         if channel == ChannelChoice.WHATSAPP and external_timestamp:
             customer.last_whatsapp_event_at = external_timestamp
@@ -333,6 +434,38 @@ class ConversationService:
         language = conversation.customer.preferred_language
         if conversation.status == ConversationStatus.CLOSED:
             return ChatReply('')
+
+        # Business hours / away auto-reply & first-inbound greeting hooks (opt-in per tenant BusinessProfile)
+        try:
+            from apps.business.models import BusinessProfile
+            from apps.crm.business_hours import is_within_business_hours
+            b_profile = BusinessProfile.get_active(tenant=conversation.tenant)
+        except Exception:
+            b_profile = None
+
+        if b_profile and (b_profile.after_hours_auto_reply or '').strip() and not is_within_business_hours(b_profile):
+            from datetime import timedelta
+            recently_sent = Message.objects.filter(
+                conversation=conversation,
+                sender_type=SenderType.BOT,
+                response_data__after_hours_auto_reply=True,
+                created_at__gte=timezone.now() - timedelta(hours=6),
+            ).exists()
+            if not recently_sent:
+                try:
+                    from apps.crm.automation_engine import record_business_event
+                    if conversation.tenant_id:
+                        record_business_event(
+                            tenant=conversation.tenant,
+                            event_type='conversation.after_hours',
+                            entity_type='conversation',
+                            entity_id=conversation.pk,
+                            payload={'conversation_id': conversation.pk, 'customer_id': conversation.customer_id},
+                        )
+                except Exception:
+                    pass
+                return ChatReply(b_profile.after_hours_auto_reply.strip())
+
         if conversation.status == ConversationStatus.HUMAN_HANDOVER:
             if message.lower() not in ('resume bot', 'resume assistant'):
                 return ChatReply('', handover_required=True)
@@ -407,7 +540,7 @@ class ConversationService:
             return ChatReply(
                 'I want to make sure you get the exact right assistance. '
                 'Your conversation has been handed over to our human support team. '
-                'A technician or shop representative will respond to you shortly.',
+                'A member of our service team will review your request.',
                 handover_required=True)
         return ChatReply(prepared.text_reply)
 
@@ -418,6 +551,18 @@ class ConversationService:
             conversation.picked_up_at = None
         conversation.status = ConversationStatus.HUMAN_HANDOVER
         conversation.handoff_summary = cls.generate_handoff_summary(conversation, reason=reason)
+        if conversation.assigned_staff is None and conversation.tenant_id:
+            try:
+                from apps.business.models import BusinessProfile
+                from apps.crm.assignment_service import assign_lead_round_robin
+                b_profile = BusinessProfile.get_active(tenant=conversation.tenant)
+                if b_profile and b_profile.auto_assign_inbound:
+                    assigned = assign_lead_round_robin(conversation.tenant, contact=conversation.customer)
+                    if assigned:
+                        conversation.assigned_staff = assigned
+                        conversation.picked_up_at = timezone.now()
+            except Exception:
+                pass
         conversation.save(update_fields=['status', 'handoff_summary', 'assigned_staff', 'picked_up_at'])
         logger.info('Handover triggered:\n%s', conversation.handoff_summary)
 

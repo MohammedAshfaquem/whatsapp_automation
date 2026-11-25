@@ -3,7 +3,7 @@ import json
 from time import monotonic
 from typing import Optional
 from django.conf import settings
-from .prompts import SYSTEM_INSTRUCTION
+from .prompts import SYSTEM_INSTRUCTION, get_system_instruction, get_booking_instruction
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class GeminiChatService:
         try:
             from google.genai import types
             config = types.GenerateContentConfig(
-                system_instruction=system_instruction or SYSTEM_INSTRUCTION,
+                system_instruction=system_instruction or get_system_instruction(),
                 temperature=0.2,
                 max_output_tokens=600,
             )
@@ -108,7 +108,7 @@ class GeminiChatService:
             'fields': {'type': 'object', 'properties': {key: {'type': 'string'} for key in FIELD_LIMITS}},
             'clear_fields': {'type': 'array', 'items': {'type': 'string', 'enum': list(FIELD_LIMITS)}},
         }, 'required': ['kind', 'recipient', 'reply']}
-        raw = cls.generate_reply(prompt, system_instruction=SYSTEM_INSTRUCTION + BOOKING_TURN_INSTRUCTION,
+        raw = cls.generate_reply(prompt, system_instruction=get_system_instruction() + get_booking_instruction(),
                                  response_schema=schema)
         try:
             result = json.loads(raw) if raw else None

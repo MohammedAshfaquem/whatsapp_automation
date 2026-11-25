@@ -129,11 +129,15 @@ class TestHumanHandoverWorkflow:
 class TestOwnerBookingAPIs:
     def test_owner_confirm_and_reject_endpoints(self, client):
         admin = User.objects.create_superuser(username='shopowner', password='ownerpass123', email='owner@shop.com')
+        from apps.tenants.models import Tenant
+        tenant = Tenant.objects.create(name='Booking inspection', slug='booking-inspection')
         customer = Customer.objects.create(name="Rohit", phone_number="+919810012345")
+        customer.tenant=tenant;customer.save(update_fields=['tenant'])
         svc = Service.objects.first()
 
         booking = Booking.objects.create(
             customer=customer,
+            tenant=tenant,
             service=svc,
             service_address="B-12, Sector 62, Noida",
             status=BookingStatus.PENDING
@@ -145,6 +149,7 @@ class TestOwnerBookingAPIs:
 
         # 2. Authorized owner confirms
         client.login(username='shopowner', password='ownerpass123')
+        session=client.session;session['inspecting_tenant_id']=tenant.pk;session.save()
         resp_confirm = client.post(
             f"/api/bookings/{booking.id}/confirm/",
             data={"owner_notes": "Confirmed for 10 AM by Tech Vijay"},
@@ -158,6 +163,7 @@ class TestOwnerBookingAPIs:
         # 3. Authorized owner rejects another booking
         booking2 = Booking.objects.create(
             customer=customer,
+            tenant=tenant,
             service=svc,
             service_address="Out of city area",
             status=BookingStatus.PENDING

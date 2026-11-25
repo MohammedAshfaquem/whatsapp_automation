@@ -1,0 +1,4 @@
+{% extends 'tenants/account_base.html' %}
+{% block title %}Password Recovery — Neoriz{% endblock %}
+{% block extra_head %}<style>.recovery-card{max-width:480px;margin:5vh auto;padding:2rem;background:white;border:1px solid #d5e7dc;border-radius:14px}.recovery-card label{display:block;margin:1rem 0 .4rem}.form-control{width:100%;min-height:44px;padding:.7rem;border:1px solid #bfd7c9;border-radius:8px}.errorlist{color:#b42318;padding-left:1rem}.helptext{display:block;color:#52675c;font-size:.85rem}</style>{% endblock %}
+{% block content %}<section class="recovery-card"><h1>Reset your password</h1><p>Enter the email address associated with your account.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit" style="margin-top:1rem">Send recovery instructions</button></form><p><a href="/login/">Back to sign in</a></p></section>{% endblock %}

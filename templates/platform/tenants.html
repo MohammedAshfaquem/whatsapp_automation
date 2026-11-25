@@ -1,0 +1,115 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Tenants & Workspaces — Platform Administration{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-heading);">Tenants & Workspaces Directory</h1>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">Inspect, activate, suspend, or configure capability overrides for each tenant workspace.</p>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem;">
+    <form method="get" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search by workspace name or slug..." 
+               style="flex: 2; min-width: 260px; padding: 0.6rem 0.9rem; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 0.85rem;">
+        
+        <select name="status" style="flex: 1; min-width: 180px; padding: 0.6rem 0.9rem; border: 1px solid var(--border-dark); border-radius: 6px; font-size: 0.85rem;">
+            <option value="">All Statuses</option>
+            <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Active</option>
+            <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending Approval</option>
+            <option value="SUSPENDED" {% if status_filter == 'SUSPENDED' %}selected{% endif %}>Suspended</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1.2rem;">Filter</button>
+        {% if search_query or status_filter %}
+        <a href="{% url 'platform-tenants' %}" class="btn btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Tenants Table -->
+<div class="card">
+    <table class="table-custom">
+        <thead>
+            <tr>
+                <th>Workspace</th>
+                <th>Plan Tier</th>
+                <th>Subscription Status</th>
+                <th>Seats</th>
+                <th>Services</th>
+                <th>Created</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tenants %}
+            <tr>
+                <td>
+                    <strong>{{ t.name }}</strong>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Slug: {{ t.slug }}</div>
+                </td>
+                <td>
+                    <span class="badge badge-blue">
+                        {{ t.subscription.effective_plan.name|default:t.plan }}
+                    </span>
+                </td>
+                <td>
+                    {% if t.subscription.status == 'ACTIVE' %}
+                    <span class="badge badge-green">● Active</span>
+                    {% elif t.subscription.status == 'PENDING_APPROVAL' %}
+                    <span class="badge badge-yellow">▲ Pending Review</span>
+                    {% elif t.subscription.status == 'SUSPENDED' %}
+                    <span class="badge badge-red">■ Suspended</span>
+                    {% else %}
+                    <span class="badge badge-blue">{{ t.subscription.status|default:"Active" }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ t.active_staff_count }} / {{ t.effective_max_staff }}</td>
+                <td>{{ t.services.count }} / {{ t.effective_max_services }}</td>
+                <td style="font-size: 0.82rem; color: var(--text-muted);">{{ t.created_at|date:"M d, Y" }}</td>
+                <td style="text-align: right;">
+                    <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                        <a href="{% url 'platform-tenant-overrides' t.id %}" class="btn btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">
+                            Overrides
+                        </a>
+                        <a href="{% url 'platform-inspect-tenant' t.id %}" class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">
+                            Inspect
+                        </a>
+
+                        {% if t.subscription.status == 'PENDING_APPROVAL' %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="approve_subscription">
+                            <input type="hidden" name="tenant_id" value="{{ t.id }}">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">Approve</button>
+                        </form>
+                        {% elif t.subscription.status == 'ACTIVE' %}
+                        <form method="post" style="display: inline;" onsubmit="return confirm('Suspend workspace {{ t.name }}? Outbound messages and staff access will be paused.');">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="suspend_tenant">
+                            <input type="hidden" name="tenant_id" value="{{ t.id }}">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">Suspend</button>
+                        </form>
+                        {% elif t.subscription.status == 'SUSPENDED' %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reactivate_tenant">
+                            <input type="hidden" name="tenant_id" value="{{ t.id }}">
+                            <button type="submit" class="btn btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.78rem;">Reactivate</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No workspaces found matching filter criteria.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

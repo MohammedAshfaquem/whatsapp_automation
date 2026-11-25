@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block page_title %}CRM & Sales Pipeline{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<!-- Top CRM KPI Stats -->
+<div class="kpi-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 2rem;">
+    <!-- Total Contacts -->
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Total Contacts</span>
+            <div class="kpi-icon-pill">👥</div>
+        </div>
+        <div class="kpi-value-row">
+            <div>
+                <div class="kpi-num">{{ metrics.total_contacts }}</div>
+                <div class="kpi-trend up">+{{ metrics.new_contacts_30d }} past 30 days</div>
+            </div>
+            {% if metrics.unassigned_contacts %}
+            <div style="font-size: 0.75rem; color: #f59e0b; font-weight: 600;">{{ metrics.unassigned_contacts }} unassigned</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Open Deals & Pipeline -->
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Active Deals</span>
+            <div class="kpi-icon-pill">💼</div>
+        </div>
+        <div class="kpi-value-row">
+            <div>
+                <div class="kpi-num">{{ metrics.open_deals_count }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    {% if metrics.pipeline_values %}
+                        {% for cur, val in metrics.pipeline_values.items %}
+                        <span style="font-weight: 700; color: #11b76d;">{{ cur }} {{ val|floatformat:2 }}</span>{% if not forloop.last %} • {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span>Pipeline: 0.00</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Rate -->
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Win Rate</span>
+            <div class="kpi-icon-pill">🏆</div>
+        </div>
+        <div class="kpi-value-row">
+            <div>
+                <div class="kpi-num">{{ metrics.win_rate_percent }}%</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    {{ metrics.won_deals_count }} won / {{ metrics.lost_deals_count }} lost
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks & Activities -->
+    <div class="kpi-card">
+        <div class="kpi-top">
+            <span class="kpi-label">Overdue Tasks</span>
+            <div class="kpi-icon-pill" style="{% if metrics.overdue_activities_count %}background: #fee2e2; color: #dc2626;{% endif %}">⏱</div>
+        </div>
+        <div class="kpi-value-row">
+            <div>
+                <div class="kpi-num" style="{% if metrics.overdue_activities_count %}color: #dc2626;{% endif %}">{{ metrics.overdue_activities_count }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    {{ metrics.pending_activities_count }} open tasks total
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Stage Progress Overview -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <div>
+            <h3 class="card-title">Deal Pipeline by Stage</h3>
+            <p class="card-subtitle">Visual distribution of open opportunities across sales stages</p>
+        </div>
+        <a href="{% url 'crm-deal-board' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">Open Deal Board →</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1rem;">
+        {% for st in metrics.stage_breakdown %}
+        <div style="background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ st.stage_name }}</span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: #11b76d;">{{ st.probability }}%</span>
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ st.count }}</div>
+            </div>
+            <div style="margin-top: 0.75rem; font-size: 0.78rem; color: #64748b; font-weight: 600;">
+                {% if st.values_by_currency %}
+                    {% for c, v in st.values_by_currency.items %}
+                    <div>{{ c }} {{ v|floatformat:0 }}</div>
+                    {% endfor %}
+                {% else %}
+                    <div>-</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Two-Column Grid: Recent Deals & Recent Activities -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <!-- Recent Deals -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Recent Deals</h3>
+                <p class="card-subtitle">Latest sales opportunities</p>
+            </div>
+            <a href="{% url 'crm-deal-list' %}" style="font-size: 0.8rem; font-weight: 600; color: var(--primary);">View all</a>
+        </div>
+
+        {% if recent_deals %}
+        <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #e2e8f0; text-align: left; color: #64748b;">
+                        <th style="padding: 0.5rem 0.25rem;">Deal</th>
+                        <th style="padding: 0.5rem 0.25rem;">Stage</th>
+                        <th style="padding: 0.5rem 0.25rem; text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in recent_deals %}
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 0.65rem 0.25rem;">
+                            <a href="{% url 'crm-deal-detail' d.id %}" style="font-weight: 600; color: #1e293b;">{{ d.title }}</a>
+                            <div style="font-size: 0.75rem; color: #64748b;">{{ d.contact.name|default:d.contact.phone_number }}</div>
+                        </td>
+                        <td style="padding: 0.65rem 0.25rem;">
+                            <span class="badge" style="background: #e8f8f0; color: #065f46; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 600;">
+                                {{ d.stage.name }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.65rem 0.25rem; text-align: right; font-weight: 700; color: #0f172a;">
+                            {% if d.amount %}{{ d.currency }} {{ d.amount|floatformat:2 }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 2rem; color: #94a3b8;">
+            <p>No deals created yet.</p>
+            <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="margin-top: 0.75rem; font-size: 0.8rem;">+ Create First Deal</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Activities -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Upcoming & Recent Tasks</h3>
+                <p class="card-subtitle">Scheduled calls, meetings, and follow-ups</p>
+            </div>
+            <a href="{% url 'crm-activity-list' %}" style="font-size: 0.8rem; font-weight: 600; color: var(--primary);">View all</a>
+        </div>
+
+        {% if recent_activities %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for act in recent_activities %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <form method="post" action="{% url 'crm-activity-toggle' act.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 1.1rem; color: {% if act.status == 'COMPLETED' %}#16a34a{% else %}#cbd5e1{% endif %};">
+                            {% if act.status == 'COMPLETED' %}☑{% else %}☐{% endif %}
+                        </button>
+                    </form>
+                    <div>
+                        <div style="font-size: 0.85rem; font-weight: 600; color: #1e293b; {% if act.status == 'COMPLETED' %}text-decoration: line-through; color: #94a3b8;{% endif %}">
+                            {{ act.title }}
+                        </div>
+                        <div style="font-size: 0.75rem; color: #64748b;">
+                            <span style="text-transform: capitalize;">{{ act.activity_type|lower }}</span>
+                            {% if act.contact %} • {{ act.contact.name|default:act.contact.phone_number }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; font-weight: 600; {% if act.is_overdue %}color: #dc2626;{% else %}color: #64748b;{% endif %}">
+                        {{ act.due_date|date:"d M H:i" }}
+                    </div>
+                    {% if act.is_overdue %}
+                    <span style="font-size: 0.68rem; background: #fee2e2; color: #dc2626; padding: 1px 6px; border-radius: 8px; font-weight: 700;">Overdue</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 2rem; color: #94a3b8;">
+            <p>No active tasks or follow-ups scheduled.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

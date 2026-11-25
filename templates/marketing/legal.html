@@ -1,0 +1,30 @@
+{% extends "marketing/base_marketing.html" %}
+
+{% block title %}{{ doc_type_title }} — Neoriz WhatsApp Automation{% endblock %}
+
+{% block content %}
+<section style="padding: 4rem 0;">
+    <div class="container" style="max-width: 820px;">
+        <div style="background: #ffffff; border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 3rem; box-shadow: var(--shadow-sm);">
+            {% if document %}
+            <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1.5rem; margin-bottom: 2rem;">
+                <div style="color: var(--brand-green); font-size: 0.85rem; font-weight: 700; text-transform: uppercase;">Legal Policy</div>
+                <h1 style="font-size: 2.2rem; font-weight: 900; color: var(--text-heading); margin-top: 0.25rem;">{{ document.title }}</h1>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    Version {{ document.version }} &bull; Effective Date: {{ document.effective_date|date:"F d, Y" }} &bull; Status: {{ document.get_status_display }}
+                </div>
+            </div>
+
+            <div style="font-size: 0.95rem; color: #334155; line-height: 1.8; white-space: pre-line;">
+                {{ document.content }}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 3rem 0;">
+                <h2>Document Draft in Progress</h2>
+                <p style="color: var(--text-muted); margin-top: 0.5rem;">This legal document is currently under administrative draft review.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

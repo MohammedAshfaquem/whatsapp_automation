@@ -23,6 +23,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"Sync complete!\n"
             f"  Services:  {stats['services']}\n"
+            f"  Products:  {stats.get('products', 0)}\n"
             f"  FAQs:      {stats['faqs']}\n"
             f"  Documents: {stats['documents']}\n"
             f"  Business:  {stats['business']}\n"

@@ -1,0 +1,72 @@
+{% extends 'platform/base_platform.html' %}
+
+{% block title %}Bulk Plan Assignment Preview — Platform Administration{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.5rem;">
+        Confirm Bulk Plan Migration
+    </h1>
+    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+        Review the concrete impact of assigning the <strong>{{ target_plan.name }}</strong> plan to the <strong>{{ tenants.count }}</strong> selected workspaces.
+    </p>
+
+    <!-- Plan Differences Card -->
+    <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">Target Plan Entitlements: {{ target_plan.name }}</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 0.85rem;">
+            <div><strong>Agent Seats:</strong> {{ target_plan.max_staff }}</div>
+            <div><strong>Contacts Limit:</strong> {{ target_plan.max_contacts }}</div>
+            <div><strong>Services Limit:</strong> {{ target_plan.max_services }}</div>
+            <div><strong>Monthly Msg:</strong> {{ target_plan.monthly_message_allowance }}</div>
+        </div>
+    </div>
+
+    <!-- Affected Workspaces Table -->
+    <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">Affected Workspaces ({{ tenants.count }})</h3>
+    <table class="table-custom" style="margin-bottom: 1.75rem;">
+        <thead>
+            <tr>
+                <th>Workspace</th>
+                <th>Current Plan</th>
+                <th>Current Seats</th>
+                <th>Target Plan</th>
+                <th>Target Seats</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tenants %}
+            <tr>
+                <td><strong>{{ t.name }}</strong></td>
+                <td><span class="badge badge-yellow">{{ t.subscription.effective_plan.name|default:t.plan }}</span></td>
+                <td>{{ t.effective_max_staff }}</td>
+                <td><span class="badge badge-green">{{ target_plan.name }}</span></td>
+                <td><strong>{{ target_plan.max_staff }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Safety Confirmation Form -->
+    <form method="post" action="{% url 'platform-access-matrix' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="bulk_assign_plan">
+        <input type="hidden" name="target_plan_code" value="{{ target_plan.code }}">
+        <input type="hidden" name="confirm" value="yes">
+        {% for id in selected_ids %}
+        <input type="hidden" name="tenant_ids" value="{{ id }}">
+        {% endfor %}
+
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; font-size: 0.88rem; color: #1e40af;">
+            <strong>Safety Verification:</strong> Customer conversations, deals, and passwords are fully preserved. Workspace entitlements will update immediately on subsequent requests.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a href="{% url 'platform-access-matrix' %}" class="btn btn-secondary">&larr; Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;">
+                Confirm & Apply Bulk Migration ({{ tenants.count }} Workspaces)
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

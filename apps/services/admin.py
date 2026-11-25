@@ -1,8 +1,9 @@
 from django.contrib import admin
+from apps.tenants.admin import TenantScopedAdminMixin
 from .models import Service
 
 @admin.register(Service)
-class ServiceAdmin(admin.ModelAdmin):
+class ServiceAdmin(TenantScopedAdminMixin, admin.ModelAdmin):
     list_display = ('name', 'category', 'price_type', 'formatted_price', 'estimated_duration', 'is_active', 'updated_at')
     list_filter = ('category', 'price_type', 'is_active', 'created_at')
     search_fields = ('name', 'description', 'category')

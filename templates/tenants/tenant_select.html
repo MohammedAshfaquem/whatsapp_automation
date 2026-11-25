@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Workspace — Neoriz WhatsApp Automation{% endblock %}
+{% block page_title %}Your Workspaces{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; padding: 1.5rem 0;">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.5rem;">Choose an Authorized Workspace</h1>
+        <p style="font-size: 0.95rem; color: var(--text-muted);">
+            Your account has access to multiple organizations. Select a workspace to enter its operational context.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.25rem;">
+        {% for m in memberships %}
+        <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; border: 2px solid {% if current_tenant.id == m.tenant.id %}var(--primary){% else %}var(--border-light){% endif %}; position: relative;">
+            {% if current_tenant.id == m.tenant.id %}
+            <div style="position: absolute; top: 12px; right: 12px;">
+                <span class="badge badge-green">Currently Active</span>
+            </div>
+            {% endif %}
+
+            <div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-heading); margin-bottom: 0.35rem;">
+                    {{ m.tenant.name }}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Workspace Slug: <span style="font-family: monospace;">{{ m.tenant.slug }}</span>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                    <span class="badge badge-blue">Role: {{ m.get_role_display }}</span>
+                    <span class="badge badge-purple">Plan: {{ m.tenant.subscription.effective_plan.name|default:m.tenant.plan }}</span>
+                    {% if m.tenant.is_active %}
+                    <span class="badge badge-green">Operational</span>
+                    {% else %}
+                    <span class="badge badge-red">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-light); padding-top: 1rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.78rem; color: var(--text-muted);">
+                    Joined: {{ m.created_at|date:"M d, Y" }}
+                </span>
+                {% if current_tenant.id == m.tenant.id %}
+                <a href="{% url 'dashboard' %}" class="btn-primary" style="padding: 0.5rem 1.15rem; font-size: 0.85rem;">
+                    Enter Dashboard &rarr;
+                </a>
+                {% else %}
+                <a href="{% url 'tenant-switch' m.tenant.id %}" class="btn-secondary" style="padding: 0.5rem 1.15rem; font-size: 0.85rem; font-weight: 700;">
+                    Switch to Workspace &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

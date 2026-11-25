@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block page_title %}{{ company.name }} - Company Profile{% endblock %}
+
+{% block content %}
+{% include 'crm/nav.html' %}
+
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">{{ company.name }}</h2>
+                {% if company.industry %}
+                <span class="badge" style="background: #e8f8f0; color: #11b76d; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">
+                    {{ company.industry }}
+                </span>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 1.5rem; font-size: 0.85rem; color: #64748b; margin-top: 0.5rem; flex-wrap: wrap;">
+                {% if company.website %}<span>🌐 <a href="{{ company.website }}" target="_blank" rel="noopener" style="color: #11b76d;">{{ company.website }}</a></span>{% endif %}
+                {% if company.phone %}<span>📞 {{ company.phone }}</span>{% endif %}
+                {% if company.domain %}<span>🔗 {{ company.domain }}</span>{% endif %}
+            </div>
+            {% if company.address %}
+            <div style="font-size: 0.82rem; color: #64748b; margin-top: 0.35rem;">📍 {{ company.address }}</div>
+            {% endif %}
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'crm-contact-create' %}" class="btn-secondary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">+ Add Contact</a>
+            <a href="{% url 'crm-deal-create' %}" class="btn-primary" style="font-size: 0.82rem; padding: 0.45rem 0.85rem;">+ New Deal</a>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- Associated Contacts -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Associated Contacts</h3>
+                <p class="card-subtitle">{{ company.contacts.count }} people associated with this organization</p>
+            </div>
+        </div>
+
+        {% if company.contacts.all %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for c in company.contacts.all %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                <div>
+                    <a href="{% url 'crm-contact-detail' c.id %}" style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">
+                        {{ c.name|default:"(Unnamed)" }}
+                    </a>
+                    <div style="font-size: 0.75rem; color: #64748b;">{{ c.phone_number }} {% if c.email %}• {{ c.email }}{% endif %}</div>
+                </div>
+                <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 600;">
+                    {{ c.get_lifecycle_status_display }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align: center; color: #94a3b8; padding: 2rem;">No contacts linked to this company yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Associated Deals -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title">Associated Deals</h3>
+                <p class="card-subtitle">{{ company.deals.count }} sales opportunities</p>
+            </div>
+        </div>
+
+        {% if company.deals.all %}
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for d in company.deals.all %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9;">
+                <div>
+                    <a href="{% url 'crm-deal-detail' d.id %}" style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">
+                        {{ d.title }}
+                    </a>
+                    <div style="font-size: 0.75rem; color: #64748b;">Stage: {{ d.stage.name }}</div>
+                </div>
+                <div style="text-align: right; font-weight: 800; color: #0f172a; font-size: 0.9rem;">
+                    {% if d.amount %}{{ d.currency }} {{ d.amount|floatformat:2 }}{% else %}Quotation{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align: center; color: #94a3b8; padding: 2rem;">No deals linked to this company yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

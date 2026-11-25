@@ -1,0 +1,40 @@
+{% extends "tenants/account_base.html" %}
+{% load static %}
+
+{% block title %}Confirm Email Address &bull; Neoriz WhatsApp Automation{% endblock %}
+
+{% block extra_head %}
+<style>
+.verify-wrap { min-height: 76vh; display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+.verify-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2.5rem 2rem; max-width: 480px; width: 100%; box-shadow: 0 10px 35px rgba(0,0,0,0.06); text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-wrap">
+    <div class="verify-card">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 1.25rem auto;">
+            &#9993;
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 0.75rem;">
+            {% if is_recovery %}Confirm Recovery Email{% else %}Confirm Your Email Address{% endif %}
+        </h1>
+        <p style="font-size: 0.94rem; color: #475569; line-height: 1.6; margin-bottom: 1.5rem;">
+            {% if business_name %}
+                Click below to confirm <strong>{{ target_email }}</strong> for <strong>{{ business_name }}</strong>.
+            {% else %}
+                Click below to confirm verification of <strong>{{ target_email }}</strong>.
+            {% endif %}
+        </p>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.82rem; color: #64748b;">
+            This verification link expires {{ expires_at|date:"d M Y, H:i T" }}. Confirming below completes verification with single-use protection.
+        </div>
+        <form method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-size: 0.98rem; font-weight: 700;">
+                Confirm &amp; Verify Email &rarr;
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

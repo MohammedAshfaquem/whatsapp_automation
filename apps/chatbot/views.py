@@ -2,11 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
-from django.utils import timezone
-from .models import Customer, Conversation, Message, ChannelChoice, ConversationStatus, MessageDirection, SenderType, ProcessingStatus
+
+from .models import ChannelChoice
 from .serializers import SimulatedChatRequestSerializer, SimulatedChatResponseSerializer
-from apps.services.services import get_services_formatted_text
-from apps.business.models import BusinessProfile
 
 from drf_spectacular.utils import extend_schema, OpenApiExample
 

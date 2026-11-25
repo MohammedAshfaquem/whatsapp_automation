@@ -39,7 +39,7 @@
     .pill-tab-btn.active {
         background: var(--primary);
         color: #ffffff;
-        box-shadow: 0 4px 12px rgba(67, 56, 202, 0.25);
+        box-shadow: 0 4px 12px rgba(17, 183, 109, 0.25);
     }
 
     .tab-badge {
@@ -410,8 +410,8 @@
         width: 44px;
         height: 44px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-        color: #3730a3;
+        background: linear-gradient(135deg, #e8f8f0 0%, #bbf7d0 100%);
+        color: #065f46;
         font-weight: 700;
         display: flex;
         align-items: center;
@@ -459,8 +459,8 @@
     }
 
     .tag-badge {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: #e8f8f0;
+        color: #065f46;
         border-radius: 12px;
         padding: 2px 8px;
         font-size: 0.72rem;
@@ -493,7 +493,7 @@
         background: var(--primary);
         color: #ffffff;
         border-color: var(--primary);
-        box-shadow: 0 2px 8px rgba(67, 56, 202, 0.25);
+        box-shadow: 0 2px 8px rgba(17, 183, 109, 0.25);
     }
     .lead-filter-btn.active .filter-badge {
         background: rgba(255, 255, 255, 0.25) !important;
@@ -550,7 +550,7 @@
         <span> Overview</span>
     </button>
     <button class="pill-tab-btn" data-tab="tab-services">
-        <span> AC Services</span>
+        <span> Services</span>
         <span class="tab-badge">{{ services_count }}</span>
     </button>
     <button class="pill-tab-btn" data-tab="tab-leads" id="tabBtnLeads">
@@ -561,6 +561,9 @@
         <span> Customers</span>
         <span class="tab-badge">{{ customers_count }}</span>
     </button>
+    <a href="{% url 'crm-overview' %}" class="pill-tab-btn" style="text-decoration: none;">
+        <span>◈ CRM & Sales</span>
+    </a>
     <button class="pill-tab-btn" data-tab="tab-bookings">
         <span> Bookings</span>
         {% if pending_bookings_count > 0 %}
@@ -569,10 +572,16 @@
             <span class="tab-badge">{{ bookings_count }}</span>
         {% endif %}
     </button>
-    {% if is_superuser %}
+    {% if can_manage_team or is_superuser %}
     <button class="pill-tab-btn" data-tab="tab-users">
-        <span> Team access</span>
-        <span class="tab-badge">{{ users_count }}</span>
+        <span> Team & Workspace</span>
+        <span class="tab-badge">{% if team_memberships %}{{ team_memberships|length }}{% else %}{{ users_count }}{% endif %}</span>
+    </button>
+    {% endif %}
+    {% if is_superuser %}
+    <button class="pill-tab-btn" data-tab="tab-platform">
+        <span> Platform Admin</span>
+        <span class="tab-badge" style="background: #e8f8f0; color: #065f46;">{{ all_tenants_count }} Tenants</span>
     </button>
     {% endif %}
 </div>
@@ -583,10 +592,10 @@
 <div id="tab-overview" class="tab-pane active">
     <!-- Top 4 KPI Stat Cards (Matching User Business Requirements) -->
     <div class="kpi-row">
-        <!-- 1. Total AC Services -->
-        <div class="kpi-card" onclick="switchTab('tab-services')" style="cursor: pointer;" title="View all AC services and pricing">
+        <!-- 1. Total Services -->
+        <div class="kpi-card" onclick="switchTab('tab-services')" style="cursor: pointer;" title="View all services and pricing">
             <div class="kpi-top">
-                <span class="kpi-label">Total AC Services</span>
+                <span class="kpi-label">Total Services</span>
                 <div class="kpi-icon-pill"></div>
             </div>
             <div class="kpi-value-row">
@@ -666,7 +675,7 @@
         <section class="card"><div class="card-header"><div><div class="eyebrow">Next steps</div><h3 class="card-title">Your attention, where it matters</h3></div><span class="badge badge-green">Live records</span></div>
             <div class="queue-row"><div><strong>Booking requests</strong><small>Review preferred dates and confirm a visit.</small></div><button type="button" class="btn-secondary" onclick="switchTab('tab-bookings')">{{ pending_bookings_count }} pending ↗</button></div>
             <div class="queue-row"><div><strong>Waiting for a person</strong><small>Customers who need your team's help.</small></div><button type="button" class="btn-secondary" onclick="switchTab('tab-leads');setLeadFilter2('HANDOVER')">{{ handover_leads_count }} waiting ↗</button></div>
-            <div class="queue-row"><div><strong>Delivery attention</strong><small>Failed or blocked messages needing review.</small></div><a class="btn-secondary" href="/admin/whatsapp/whatsappdelivery/">{{ delivery_attention_count }} messages ↗</a></div>
+            <div class="queue-row"><div><strong>Delivery attention</strong><small>Failed or blocked messages needing review.</small></div><a class="btn-secondary" href="/app/settings?tab=diagnostics">{{ delivery_attention_count }} messages ↗</a></div>
         </section>
         <section class="card"><div class="card-header"><div><div class="eyebrow">Coming up</div><h3 class="card-title">Latest booking requests</h3></div><button type="button" class="text-action" onclick="switchTab('tab-bookings')">View all ↗</button></div>
         {% for booking in bookings|slice:":3" %}<div class="queue-row"><div><strong>{{ booking.customer.name|default:booking.customer.phone_number }}</strong><small>{{ booking.service.name|default:"Service visit" }} · #{{ booking.id }}</small></div><span class="badge {% if booking.status == 'CONFIRMED' %}badge-green{% else %}badge-yellow{% endif %}">{{ booking.get_status_display }}</span></div>{% empty %}<div class="empty-state">No booking requests yet.<br>New requests will appear here.</div>{% endfor %}
@@ -815,7 +824,7 @@
                     <div class="customer-avatar">{{ b.customer.name|default:"C"|first|upper }}</div>
                     <div class="customer-meta">
                         <h4>{{ b.customer.name|default:b.customer.phone_number }}</h4>
-                        <p>{{ b.service.name|default:"General AC Check-up" }}</p>
+                        <p>{{ b.service.name|default:"Consultation / Service Request" }}</p>
                     </div>
                 </div>
 
@@ -1026,13 +1035,13 @@
 </div>
 
 <!-- ======================================================== -->
-<!-- TAB 2: AC SERVICES & PRICING -->
+<!-- TAB 2: SERVICES & PRICING -->
 <!-- ======================================================== -->
 <div id="tab-services" class="tab-pane">
     <div class="card">
         <div class="card-header">
             <div>
-                <h3 class="card-title"> Add New AC Service</h3>
+                <h3 class="card-title"> Add New Service</h3>
                 <p class="card-subtitle">Manage service details, customer pricing, and contact information.</p>
             </div>
         </div>
@@ -1345,10 +1354,130 @@
 </div>
 
 <!-- ======================================================== -->
-<!-- TAB 5: TEAM & RBAC (SUPERADMIN ONLY) -->
+<!-- TAB 5: TEAM & WORKSPACE ACCESS -->
 <!-- ======================================================== -->
-{% if is_superuser %}
+{% if can_manage_team or is_superuser %}
 <div id="tab-users" class="tab-pane">
+    {% if tenant and can_manage_team %}
+    <!-- Invite Team Member to Current Workspace -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Invite Team Member to {{ tenant.name }}</h3>
+                <p class="card-subtitle">Tenant-scoped access: Invite colleagues with Admin or Staff privileges.</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'tenant-invite' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Colleague Email *</label>
+                    {{ invite_form.email }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Role *</label>
+                    {{ invite_form.role }}
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary">Generate Single-Use Invitation</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Workspace Members -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Workspace Members ({{ tenant.name }})</h3>
+                <p class="card-subtitle">Staff and administrators assigned to this workspace</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Member</th>
+                        <th style="padding: 0.75rem;">Role</th>
+                        <th style="padding: 0.75rem;">Joined</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in team_memberships %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>@{{ m.user.username }}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ m.user.get_full_name|default:m.user.email }}</div>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <span class="badge {% if m.role == 'OWNER' %}badge-purple{% elif m.role == 'ADMIN' %}badge-blue{% else %}badge-green{% endif %}">
+                                {{ m.get_role_display }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; color: var(--text-muted); font-size: 0.82rem;">
+                            {{ m.created_at|date:"M d, Y" }}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if m.is_active and m.user.is_active %}
+                                <span class="badge badge-green">Active</span>
+                            {% else %}
+                                <span class="badge badge-red">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">No members assigned yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if pending_invitations %}
+    <!-- Pending Invitations -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Pending Invitations</h3>
+                <p class="card-subtitle">Single-use invitations sent to join {{ tenant.name }}</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Invited Email</th>
+                        <th style="padding: 0.75rem;">Role</th>
+                        <th style="padding: 0.75rem;">Expires At</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inv in pending_invitations %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;"><strong>{{ inv.email }}</strong></td>
+                        <td style="padding: 0.9rem 0.75rem;"><span class="badge badge-blue">{{ inv.get_role_display }}</span></td>
+                        <td style="padding: 0.9rem 0.75rem; color: var(--text-muted); font-size: 0.82rem;">{{ inv.expires_at|date:"M d, Y H:i" }}</td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if inv.is_expired %}
+                                <span class="badge badge-red">Expired</span>
+                            {% else %}
+                                <span class="badge badge-amber">Pending Activation</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if is_superuser %}
     <div class="card">
         <div class="card-header">
             <div>
@@ -1383,7 +1512,7 @@
     </div>
 
     <!-- Authorized Users Table -->
-    <div class="card">
+    <div class="card" style="margin-top: 1.5rem;">
         <div class="card-header">
             <div>
                 <h3 class="card-title"> Authorized System Users</h3>
@@ -1426,6 +1555,147 @@
                                 <span class="badge badge-red">Inactive</span>
                             {% endif %}
                         </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ======================================================== -->
+<!-- TAB 6: PLATFORM ADMIN (PLATFORM SUPERADMIN ONLY) -->
+<!-- ======================================================== -->
+{% if is_superuser %}
+<div id="tab-platform" class="tab-pane">
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Register New Business Tenant</h3>
+                <p class="card-subtitle">Onboard a new business organization with an initial Tenant Owner account.</p>
+            </div>
+        </div>
+        <form method="post" action="{% url 'platform-tenant-create' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Business / Company Name *</label>
+                    {{ platform_tenant_form.name }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Subscription Plan *</label>
+                    {{ platform_tenant_form.plan }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Owner Username *</label>
+                    {{ platform_tenant_form.owner_username }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Owner Email *</label>
+                    {{ platform_tenant_form.owner_email }}
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-heading); display: block; margin-bottom: 4px;">Owner Password *</label>
+                    {{ platform_tenant_form.owner_password }}
+                </div>
+            </div>
+            <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn-primary">Create Business Tenant</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tenants Directory Table -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Platform Tenants Directory</h3>
+                <p class="card-subtitle">All business organizations provisioned on Neoriz WhatsApp Automation</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">
+                        <th style="padding: 0.75rem;">Organization</th>
+                        <th style="padding: 0.75rem;">Slug</th>
+                        <th style="padding: 0.75rem;">Plan</th>
+                        <th style="padding: 0.75rem;">Members</th>
+                        <th style="padding: 0.75rem;">Status</th>
+                        <th style="padding: 0.75rem;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in all_tenants %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <strong>{{ t.name }}</strong>
+                            {% if t == tenant %}<span class="badge badge-purple" style="font-size: 10px; margin-left: 6px;">Active Workspace</span>{% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem; color: var(--text-muted); font-family: monospace;">{{ t.slug }}</td>
+                        <td style="padding: 0.9rem 0.75rem;"><span class="badge badge-blue">{{ t.get_plan_display }}</span></td>
+                        <td style="padding: 0.9rem 0.75rem;">{{ t.memberships.count }}</td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            {% if t.is_active %}
+                                <span class="badge badge-green">Active</span>
+                            {% else %}
+                                <span class="badge badge-red">Suspended</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.9rem 0.75rem;">
+                            <form method="post" action="{% url 'platform-tenant-toggle' t.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                {% if t.is_active %}
+                                    <button type="submit" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; color: #dc2626;" onclick="return confirm('Suspend tenant {{ t.name }}? Inbound WhatsApp webhooks and outbound messaging will be rejected.');">Suspend</button>
+                                {% else %}
+                                    <button type="submit" class="btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; color: #16a34a;">Activate</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">No tenants found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Platform Audit Logs -->
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h3 class="card-title"> Platform Audit Trail</h3>
+                <p class="card-subtitle">Recent administrative events across all organizations</p>
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.84rem;">
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase;">
+                        <th style="padding: 0.6rem 0.75rem;">Timestamp</th>
+                        <th style="padding: 0.6rem 0.75rem;">Organization</th>
+                        <th style="padding: 0.6rem 0.75rem;">Actor</th>
+                        <th style="padding: 0.6rem 0.75rem;">Action</th>
+                        <th style="padding: 0.6rem 0.75rem;">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in platform_audit_logs %}
+                    <tr style="border-bottom: 1px solid var(--border-light);">
+                        <td style="padding: 0.7rem 0.75rem; color: var(--text-muted);">{{ log.created_at|date:"M d, Y H:i:s" }}</td>
+                        <td style="padding: 0.7rem 0.75rem;">{{ log.tenant.name|default:"—" }}</td>
+                        <td style="padding: 0.7rem 0.75rem;">@{{ log.actor.username|default:"System" }}</td>
+                        <td style="padding: 0.7rem 0.75rem;"><span class="badge badge-purple" style="font-size: 10px;">{{ log.action }}</span></td>
+                        <td style="padding: 0.7rem 0.75rem; font-family: monospace; font-size: 0.75rem; color: var(--text-muted);">{{ log.details }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="padding: 1.5rem; text-align: center; color: var(--text-muted);">No audit events recorded yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
